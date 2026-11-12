@@ -21,8 +21,16 @@ export const POR_PAGINA = 12;
 
 export const NOINDEX = import.meta.env.PUBLIC_NOINDEX === 'true';
 
-export const brl = (n: number | null) =>
-  n == null ? 'Consulte' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+export const brl = (n: number | string | null) => {
+  const valor = Number(n);
+  if (n == null || n === '' || !Number.isFinite(valor)) return 'Consulte';
+  return valor.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 export const kmFmt = (n: number | null) => (n == null ? '' : `${n.toLocaleString('pt-BR')} km`);
 
