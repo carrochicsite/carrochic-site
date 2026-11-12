@@ -1,34 +1,82 @@
 ---
 import Base from '../layouts/Base.astro';
 import VehicleCard from './VehicleCard.astro';
-import { SITE, TIPOS } from '../lib/site';
+import { SITE, TIPOS, POR_PAGINA } from '../lib/site';
 import { supabase, CAMPOS } from '../lib/supabase';
 
 const { tipo } = Astro.props;
 const t = TIPOS[tipo];
-const { data } = await supabase.from('veiculos').select(CAMPOS).eq('tipo', tipo).eq('status', 'ativo').order('created_at', { ascending: false });
+const base = `/${t.slug}`;
+const href = (n: number) => (n === 1 ? base : `${base}?pagina=${n}`);
+
+// ?pagina=2, ?pagina=3... Qualquer valor inválido vira página 1.
+const pedida = Number(Astro.url.searchParams.get('pagina'));
+const pagina = Number.isInteger(pedida) && pedida > 1 ? pedida : 1;
+const de = (pagina - 1) * POR_PAGINA;
+
+const { data, count } = await supabase
+  .from('veiculos')
+  .select(CAMPOS, { count: 'exact' })
+  .eq('tipo', tipo)
+  .eq('status', 'ativo')
+  .order('created_at', { ascending: false })
+  .order('id', { ascending: false }) // desempate: evita repetir veículo entre páginas
+  .range(de, de + POR_PAGINA - 1);
+
 const lista = data ?? [];
+const total = count ?? lista.length;
+const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+const foraDoIntervalo = pagina > 1 && lista.length === 0;
+if (foraDoIntervalo) Astro.response.status = 404;
+
+// Números mostrados: 1 … anterior, atual, próxima … última
+const nums = [...new Set([1, totalPaginas, pagina - 1, pagina, pagina + 1])]
+  .filter((n) => n >= 1 && n <= totalPaginas)
+  .sort((a, b) => a - b);
+const paginas: (number | null)[] = [];
+nums.forEach((n, i) => {
+  if (i > 0 && n - nums[i - 1] > 1) paginas.push(null);
+  paginas.push(n);
+});
+
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
 const jsonLd = [{
   '@context': 'https://schema.org', '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Início', item: SITE.url },
-    { '@type': 'ListItem', position: 2, name: `${t.rotulo} em ${SITE.cidade}`, item: `${SITE.url}/${t.slug}` },
+    { '@type': 'ListItem', position: 2, name: `${t.rotulo} em ${SITE.cidade}`, item: `${SITE.url}${base}` },
   ],
 }];
+const sufixo = pagina > 1 ? ` (página ${pagina})` : '';
 ---
 <Base
-  title={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf} | ${SITE.nome}`}
-  description={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf}, com atendimento direto no WhatsApp. Veja fotos, preços e fale com a CARROCHIC.`}
-  path={`/${t.slug}`}
-  noindex={lista.length < 3}
+  title={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf}${sufixo} | ${SITE.nome}`}
+  description={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf}, com atendimento direto no WhatsApp. Veja fotos, preços e fale com a CARROCHIC.${pagina > 1 ? ` Página ${pagina}.` : ''}`}
+  path={href(pagina)}
+  noindex={total < 3 || foraDoIntervalo}
   jsonLd={jsonLd}
 >
   <nav class="wrap crumbs" aria-label="Você está em"><a href="/">Início</a> / {t.rotulo} em {SITE.cidade}</nav>
   <section class="sec wrap" style="padding-top:1rem">
     <h1 style="color:var(--navy)">{t.rotulo} à venda em {SITE.cidade}, {SITE.uf}</h1>
-    {lista.length === 0
-      ? <p class="lead">Ainda não temos {t.plural} anunciados. Chame no WhatsApp e conte o que você procura.</p>
-      : <div class="grid">{lista.map((v) => <VehicleCard v={v} />)}</div>}
+    {foraDoIntervalo
+      ? <p class="lead">Essa página não existe. <a href={base}>Ver {t.plural} à venda</a>.</p>
+      : lista.length === 0
+        ? <p class="lead">Ainda não temos {t.plural} anunciados. Chame no WhatsApp e conte o que você procura.</p>
+        : <>
+            <p class="contador">Mostrando {de + 1} a {de + lista.length} de {total} {total === 1 ? 'veículo' : 'veículos'}</p>
+            <div class="grid">{lista.map((v) => <VehicleCard v={v} />)}</div>
+            {totalPaginas > 1 && (
+              <nav class="pag" aria-label="Páginas">
+                {pagina > 1 ? <a rel="prev" href={href(pagina - 1)}>‹ Anterior</a> : <span class="off">‹ Anterior</span>}
+                {paginas.map((n) =>
+                  n === null ? <span class="gap">…</span>
+                  : n === pagina ? <span class="atual" aria-current="page">{n}</span>
+                  : <a href={href(n)}>{n}</a>
+                )}
+                {pagina < totalPaginas ? <a rel="next" href={href(pagina + 1)}>Próxima ›</a> : <span class="off">Próxima ›</span>}
+              </nav>
+            )}
+          </>}
   </section>
 </Base>
