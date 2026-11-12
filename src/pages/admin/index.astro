@@ -1,0 +1,55 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { TIPOS, brl } from '../../lib/site';
+import { fotosOrdenadas, tituloVeiculo } from '../../lib/supabase';
+
+const sb = Astro.locals.sb;
+const filtro = Astro.url.searchParams.get('status') ?? '';
+let q = sb
+  .from('veiculos')
+  .select('id,slug,tipo,marca,modelo,versao,ano_modelo,preco,status,destaque,veiculo_fotos(url,ordem,capa)')
+  .order('created_at', { ascending: false });
+if (['rascunho', 'ativo', 'vendido'].includes(filtro)) q = q.eq('status', filtro);
+const { data, error } = await q;
+const lista = data ?? [];
+const ok = Astro.url.searchParams.get('ok');
+const msgs: Record<string, string> = { excluido: 'Veículo excluído.', status: 'Status atualizado.' };
+---
+<Admin title="Veículos">
+  <div class="row" style="justify-content:space-between;margin-bottom:1rem">
+    <h1 style="margin:0">Veículos ({lista.length})</h1>
+    <a class="btn" href="/admin/veiculo/novo">+ Novo veículo</a>
+  </div>
+  {ok && msgs[ok] && <div class="msg ok">{msgs[ok]}</div>}
+  {error && <div class="msg erro">Erro ao carregar: {error.message}</div>}
+  <div class="row" style="margin-bottom:.8rem">
+    {[['', 'Todos'], ['ativo', 'Ativos'], ['rascunho', 'Rascunhos'], ['vendido', 'Vendidos']].map(([v, r]) => (
+      <a class={`btn sm ${filtro === v ? '' : 'sec'}`} href={v ? `/admin?status=${v}` : '/admin'}>{r}</a>
+    ))}
+  </div>
+  <div class="card" style="padding:.3rem .6rem;overflow-x:auto">
+    {lista.length === 0 ? <p class="muted">Nenhum veículo aqui ainda.</p> : (
+      <table>
+        <thead><tr><th></th><th>Veículo</th><th class="hide-m">Tipo</th><th>Preço</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {lista.map((v: any) => {
+            const capa = fotosOrdenadas(v)[0];
+            return (
+              <tr>
+                <td>{capa ? <img class="thumb" src={capa.url} alt="" loading="lazy" /> : <div class="thumb"></div>}</td>
+                <td><a href={`/admin/veiculo/${v.id}`}><b>{tituloVeiculo(v)}</b></a>{v.destaque && ' ★'}</td>
+                <td class="hide-m">{TIPOS[v.tipo]?.rotulo}</td>
+                <td>{brl(v.preco)}</td>
+                <td><span class={`tag ${v.status}`}>{v.status}</span></td>
+                <td class="row">
+                  <a class="btn sm sec" href={`/admin/veiculo/${v.id}`}>Editar</a>
+                  {v.status !== 'rascunho' && <a class="btn sm sec" href={`/veiculo/${v.slug}`} target="_blank" rel="noopener">Ver</a>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    )}
+  </div>
+</Admin>

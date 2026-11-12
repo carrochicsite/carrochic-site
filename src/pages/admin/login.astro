@@ -1,0 +1,31 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { anonClient, COOKIE_ACCESS, COOKIE_REFRESH, cookieOpts } from '../../lib/admin';
+
+let erro = '';
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const { data, error } = await anonClient().auth.signInWithPassword({
+    email: String(f.get('email') ?? '').trim(),
+    password: String(f.get('senha') ?? ''),
+  });
+  if (error || !data.session) {
+    erro = 'E-mail ou senha incorretos.';
+  } else {
+    Astro.cookies.set(COOKIE_ACCESS, data.session.access_token, cookieOpts(60 * 60));
+    Astro.cookies.set(COOKIE_REFRESH, data.session.refresh_token, cookieOpts(60 * 60 * 24 * 30));
+    return Astro.redirect('/admin', 303);
+  }
+}
+---
+<Admin title="Entrar" logado={false}>
+  <div class="card" style="max-width:380px;margin:3rem auto">
+    <h1>Entrar no painel</h1>
+    {erro && <div class="msg erro">{erro}</div>}
+    <form method="post">
+      <p><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" required /></p>
+      <p><label for="senha">Senha</label><input id="senha" name="senha" type="password" autocomplete="current-password" required /></p>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+  </div>
+</Admin>

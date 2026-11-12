@@ -1,0 +1,200 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import { SITE, TIPOS } from '../../../lib/site';
+import { CAMPOS, fotosOrdenadas, tituloVeiculo } from '../../../lib/supabase';
+import { slugify, parseNumero, texto, caminhoDoBucket, BUCKET } from '../../../lib/admin';
+
+const sb = Astro.locals.sb;
+const { id } = Astro.params;
+const novo = id === 'novo';
+const CAMBIOS = ['manual', 'automatico', 'automatizado', 'cvt'];
+const STATUS = ['rascunho', 'ativo', 'vendido'];
+
+let v: any = novo ? { tipo: 'carro', status: 'rascunho', cidade: SITE.cidade, uf: SITE.uf, destaque: false } : null;
+if (!novo) {
+  const { data } = await sb.from('veiculos').select(CAMPOS).eq('id', id!).maybeSingle();
+  if (!data) return new Response('Veículo não encontrado', { status: 404 });
+  v = data;
+}
+
+let erro = '';
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+
+  if (f.get('acao') === 'excluir' && !novo) {
+    const caminhos = (v.veiculo_fotos ?? []).map((x: any) => caminhoDoBucket(x.url)).filter(Boolean) as string[];
+    if (caminhos.length) await sb.storage.from(BUCKET).remove(caminhos);
+    const { error } = await sb.from('veiculos').delete().eq('id', v.id);
+    if (!error) return Astro.redirect('/admin?ok=excluido', 303);
+    erro = `Não foi possível excluir: ${error.message}`;
+  } else {
+    const campos = {
+      tipo: String(f.get('tipo') ?? ''),
+      marca: texto(f.get('marca')),
+      modelo: texto(f.get('modelo')),
+      versao: texto(f.get('versao')),
+      ano_fabricacao: parseNumero(f.get('ano_fabricacao')),
+      ano_modelo: parseNumero(f.get('ano_modelo')),
+      km: parseNumero(f.get('km')),
+      cambio: texto(f.get('cambio')),
+      combustivel: texto(f.get('combustivel')),
+      cor: texto(f.get('cor')),
+      preco: parseNumero(f.get('preco')),
+      bairro: texto(f.get('bairro')),
+      descricao: texto(f.get('descricao')),
+      status: String(f.get('status') ?? 'rascunho'),
+      destaque: f.get('destaque') === 'on',
+      vendedor_padrao_id: texto(f.get('vendedor_padrao_id')),
+    };
+    v = { ...v, ...campos };
+
+    if (!campos.marca || !campos.modelo) erro = 'Marca e modelo são obrigatórios.';
+    else if (!TIPOS[campos.tipo]) erro = 'Tipo inválido.';
+    else if (!STATUS.includes(campos.status)) erro = 'Status inválido.';
+    else if (campos.cambio && !CAMBIOS.includes(campos.cambio)) erro = 'Câmbio inválido.';
+    else if (campos.status === 'ativo' && !novo && !(v.veiculo_fotos ?? []).length) erro = 'Adicione pelo menos uma foto antes de ativar o anúncio.';
+
+    if (!erro) {
+      if (novo) {
+        const base = slugify(`${campos.marca} ${campos.modelo} ${campos.ano_modelo ?? ''} ${SITE.cidade}`);
+        const { data: ex } = await sb.from('veiculos').select('slug').like('slug', `${base}%`);
+        const usados = new Set((ex ?? []).map((r: any) => r.slug));
+        let slug = base;
+        for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`;
+        const { data: criado, error } = await sb
+          .from('veiculos')
+          .insert({ ...campos, status: 'rascunho', slug, cidade: SITE.cidade, uf: SITE.uf })
+          .select('id')
+          .single();
+        if (error || !criado) erro = `Erro ao salvar: ${error?.message}`;
+        else return Astro.redirect(`/admin/veiculo/${criado.id}?ok=criado`, 303);
+      } else {
+        const antes = (await sb.from('veiculos').select('status').eq('id', v.id).single()).data?.status;
+        const extra: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (campos.status === 'vendido' && antes !== 'vendido') extra.vendido_em = new Date().toISOString();
+        if (campos.status !== 'vendido') extra.vendido_em = null;
+        const { error } = await sb.from('veiculos').update({ ...campos, ...extra }).eq('id', v.id);
+        if (error) erro = `Erro ao salvar: ${error.message}`;
+        else return Astro.redirect(`/admin/veiculo/${v.id}?ok=salvo`, 303);
+      }
+    }
+  }
+}
+
+const { data: vendedores } = await sb.from('vendedores').select('id,nome').order('nome');
+const fotos = novo ? [] : fotosOrdenadas(v);
+const ok = Astro.url.searchParams.get('ok');
+const okMsg: Record<string, string> = { criado: 'Veículo criado como rascunho. Agora adicione as fotos.', salvo: 'Alterações salvas.', foto: 'Fotos atualizadas.' };
+const erroFoto = Astro.url.searchParams.get('erro');
+const val = (k: string) => (v[k] ?? '') as string | number;
+---
+<Admin title={novo ? 'Novo veículo' : tituloVeiculo(v)}>
+  <p><a href="/admin">← Voltar</a></p>
+  <h1>{novo ? 'Novo veículo' : tituloVeiculo(v)}</h1>
+  {ok && okMsg[ok] && <div class="msg ok">{okMsg[ok]}</div>}
+  {erro && <div class="msg erro">{erro}</div>}
+  {erroFoto && <div class="msg erro">{erroFoto}</div>}
+
+  <form method="post" class="card">
+    <h2>Dados</h2>
+    <div class="grid">
+      <div><label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">{Object.entries(TIPOS).map(([k, t]) => <option value={k} selected={v.tipo === k}>{t.rotulo}</option>)}</select></div>
+      <div><label for="marca">Marca *</label><input id="marca" name="marca" value={val('marca')} required placeholder="Honda" /></div>
+      <div><label for="modelo">Modelo *</label><input id="modelo" name="modelo" value={val('modelo')} required placeholder="Civic" /></div>
+      <div><label for="versao">Versão</label><input id="versao" name="versao" value={val('versao')} placeholder="EXL 2.0" /></div>
+      <div><label for="ano_fabricacao">Ano de fabricação</label><input id="ano_fabricacao" name="ano_fabricacao" inputmode="numeric" value={val('ano_fabricacao')} /></div>
+      <div><label for="ano_modelo">Ano do modelo</label><input id="ano_modelo" name="ano_modelo" inputmode="numeric" value={val('ano_modelo')} /></div>
+      <div><label for="km">Quilometragem</label><input id="km" name="km" inputmode="numeric" value={val('km')} /></div>
+      <div><label for="cambio">Câmbio</label>
+        <select id="cambio" name="cambio"><option value="">—</option>{CAMBIOS.map((c) => <option value={c} selected={v.cambio === c}>{c}</option>)}</select></div>
+      <div><label for="combustivel">Combustível</label>
+        <input id="combustivel" name="combustivel" list="comb" value={val('combustivel')} />
+        <datalist id="comb">{['Flex', 'Gasolina', 'Diesel', 'Etanol', 'Elétrico', 'Híbrido', 'GNV'].map((c) => <option value={c} />)}</datalist></div>
+      <div><label for="cor">Cor</label><input id="cor" name="cor" value={val('cor')} /></div>
+      <div><label for="preco">Preço (R$)</label><input id="preco" name="preco" inputmode="decimal" value={val('preco')} placeholder="99900" /></div>
+      <div><label for="bairro">Bairro</label><input id="bairro" name="bairro" value={val('bairro')} /></div>
+      <div><label for="vendedor_padrao_id">Vendedor padrão</label>
+        <select id="vendedor_padrao_id" name="vendedor_padrao_id"><option value="">— (WhatsApp da loja)</option>
+          {(vendedores ?? []).map((s: any) => <option value={s.id} selected={v.vendedor_padrao_id === s.id}>{s.nome}</option>)}</select></div>
+      <div><label for="status">Status</label>
+        <select id="status" name="status">{STATUS.map((s) => <option value={s} selected={v.status === s} disabled={novo && s !== 'rascunho'}>{s}</option>)}</select></div>
+    </div>
+    <p style="margin-top:.8rem"><label for="descricao">Descrição</label><textarea id="descricao" name="descricao">{val('descricao')}</textarea></p>
+    <p><label><input type="checkbox" name="destaque" checked={!!v.destaque} style="width:auto" /> Destaque na home</label></p>
+    {!novo && <p class="muted">Endereço: /veiculo/{v.slug}</p>}
+    <div class="row">
+      <button class="btn" type="submit">{novo ? 'Criar e adicionar fotos' : 'Salvar'}</button>
+      {!novo && v.status !== 'rascunho' && <a class="btn sec" href={`/veiculo/${v.slug}`} target="_blank" rel="noopener">Ver no site</a>}
+    </div>
+    {novo && <p class="muted">Dica: o veículo nasce como rascunho. Depois das fotos, mude o status para "ativo".</p>}
+  </form>
+
+  {!novo && (
+    <div class="card">
+      <h2>Fotos ({fotos.length})</h2>
+      <p class="muted">A primeira (★ capa) aparece na listagem. As fotos são reduzidas e convertidas para WebP automaticamente.</p>
+      <div class="fotos">
+        {fotos.map((f, i) => (
+          <div class={`foto ${f.capa ? 'capa' : ''}`}>
+            <img src={f.url} alt={f.alt ?? ''} loading="lazy" />
+            <div class="row" style="margin-top:.4rem">
+              {f.capa ? <b class="muted">★ capa</b> : (
+                <form method="post" action="/admin/api/foto"><input type="hidden" name="acao" value="capa" /><input type="hidden" name="veiculo_id" value={v.id} /><input type="hidden" name="url" value={f.url} /><button class="btn sm sec">Capa</button></form>
+              )}
+              {i > 0 && <form method="post" action="/admin/api/foto"><input type="hidden" name="acao" value="subir" /><input type="hidden" name="veiculo_id" value={v.id} /><input type="hidden" name="url" value={f.url} /><button class="btn sm sec" aria-label="Mover para trás">←</button></form>}
+              {i < fotos.length - 1 && <form method="post" action="/admin/api/foto"><input type="hidden" name="acao" value="descer" /><input type="hidden" name="veiculo_id" value={v.id} /><input type="hidden" name="url" value={f.url} /><button class="btn sm sec" aria-label="Mover para frente">→</button></form>}
+              <form method="post" action="/admin/api/foto" onsubmit="return confirm('Excluir esta foto?')"><input type="hidden" name="acao" value="excluir" /><input type="hidden" name="veiculo_id" value={v.id} /><input type="hidden" name="url" value={f.url} /><button class="btn sm red">Excluir</button></form>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style="margin-top:1rem">
+        <label for="arquivos">Adicionar fotos</label>
+        <input id="arquivos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-veiculo={v.id} />
+      </p>
+      <p id="prog" class="muted" role="status"></p>
+    </div>
+
+    <form method="post" class="card" onsubmit="return confirm('Excluir este veículo e todas as fotos? Não dá para desfazer.')">
+      <input type="hidden" name="acao" value="excluir" />
+      <button class="btn red" type="submit">Excluir veículo</button>
+    </form>
+  )}
+</Admin>
+
+<script is:inline>
+  const inp = document.getElementById('arquivos');
+  if (inp) {
+    const prog = document.getElementById('prog');
+    const MAX = 1600;
+    async function reduzir(file) {
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const s = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      let blob = await new Promise((r) => c.toBlob(r, 'image/webp', 0.82));
+      if (!blob || blob.type !== 'image/webp') blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+      return blob;
+    }
+    inp.addEventListener('change', async () => {
+      const arqs = [...inp.files]; let feitos = 0, falhas = [];
+      inp.disabled = true;
+      for (const [i, file] of arqs.entries()) {
+        prog.textContent = `Enviando ${i + 1} de ${arqs.length}…`;
+        try {
+          const blob = await reduzir(file);
+          const fd = new FormData();
+          fd.append('acao', 'upload'); fd.append('veiculo_id', inp.dataset.veiculo);
+          fd.append('arquivo', blob, 'foto');
+          const r = await fetch('/admin/api/foto', { method: 'POST', body: fd });
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).erro || r.status);
+          feitos++;
+        } catch (e) { falhas.push(`${file.name}: ${e.message}`); }
+      }
+      if (falhas.length) { prog.textContent = `${feitos} enviada(s). Falhas: ${falhas.join('; ')}`; inp.disabled = false; if (feitos) setTimeout(() => location.reload(), 2500); }
+      else location.href = location.pathname + '?ok=foto';
+    });
+  }
+</script>
