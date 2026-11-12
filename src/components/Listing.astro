@@ -1,0 +1,34 @@
+---
+import Base from '../layouts/Base.astro';
+import VehicleCard from './VehicleCard.astro';
+import { SITE, TIPOS } from '../lib/site';
+import { supabase, CAMPOS } from '../lib/supabase';
+
+const { tipo } = Astro.props;
+const t = TIPOS[tipo];
+const { data } = await supabase.from('veiculos').select(CAMPOS).eq('tipo', tipo).eq('status', 'ativo').order('created_at', { ascending: false });
+const lista = data ?? [];
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: `${t.rotulo} em ${SITE.cidade}`, item: `${SITE.url}/${t.slug}` },
+  ],
+}];
+---
+<Base
+  title={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf} | ${SITE.nome}`}
+  description={`${t.rotulo} à venda em ${SITE.cidade}, ${SITE.uf}, com atendimento direto no WhatsApp. Veja fotos, preços e fale com a CARROCHIC.`}
+  path={`/${t.slug}`}
+  noindex={lista.length < 3}
+  jsonLd={jsonLd}
+>
+  <nav class="wrap crumbs" aria-label="Você está em"><a href="/">Início</a> / {t.rotulo} em {SITE.cidade}</nav>
+  <section class="sec wrap" style="padding-top:1rem">
+    <h1 style="color:var(--navy)">{t.rotulo} à venda em {SITE.cidade}, {SITE.uf}</h1>
+    {lista.length === 0
+      ? <p class="lead">Ainda não temos {t.plural} anunciados. Chame no WhatsApp e conte o que você procura.</p>
+      : <div class="grid">{lista.map((v) => <VehicleCard v={v} />)}</div>}
+  </section>
+</Base>

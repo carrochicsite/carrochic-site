@@ -1,0 +1,18 @@
+---
+import { brl, kmFmt } from '../lib/site';
+import { fotosOrdenadas, tituloVeiculo } from '../lib/supabase';
+const { v } = Astro.props;
+const capa = fotosOrdenadas(v)[0];
+const meta = [v.ano_modelo, kmFmt(v.km), v.cambio, v.combustivel].filter(Boolean).join(', ');
+---
+<a class="vcard" href={`/veiculo/${v.slug}`}>
+  {capa
+    ? <img class="foto" src={capa.url} alt={capa.alt ?? tituloVeiculo(v)} loading="lazy" width="800" height="600" />
+    : <div class="foto-ph">Fotos em breve</div>}
+  <div class="info">
+    {v.status === 'vendido' && <span class="selo">Vendido</span>}
+    <h3>{tituloVeiculo(v)}</h3>
+    <div class="meta">{meta}{v.bairro ? ` · ${v.bairro}` : ''}</div>
+    <div class="preco">{brl(v.preco)}</div>
+  </div>
+</a>
