@@ -1,26 +1,22 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VehicleCard from '../../components/VehicleCard.astro';
+import GaleriaVeiculo from '../../components/GaleriaVeiculo.astro';
 import { SITE, TIPOS, brl, kmFmt, waLink } from '../../lib/site';
 import { supabase, CAMPOS, fotosOrdenadas, tituloVeiculo } from '../../lib/supabase';
-
 const { slug } = Astro.params;
 const { data: v } = await supabase.from('veiculos').select(CAMPOS).eq('slug', slug!).maybeSingle();
-
 if (!v) return new Response('Veículo não encontrado', { status: 404 });
 if (v.status === 'vendido' && v.vendido_em && Date.now() - new Date(v.vendido_em).getTime() > 60 * 86400000) {
   return new Response('Este anúncio foi encerrado.', { status: 410 });
 }
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
-
 const nome = tituloVeiculo(v);
 const fotos = fotosOrdenadas(v);
 const tipo = TIPOS[v.tipo] ?? TIPOS.carro;
 const vendido = v.status === 'vendido';
 const wa = waLink(`Olá! Vi o ${nome} no site da CARROCHIC (${SITE.url}/veiculo/${v.slug}) e tenho interesse.`);
-
 const { data: parecidos } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('tipo', v.tipo).neq('id', v.id).limit(3);
-
 const jsonLd = [
   {
     '@context': 'https://schema.org', '@type': 'Car',
@@ -65,14 +61,7 @@ const ficha: [string, string | number | null][] = [
   </nav>
   <div class="wrap veic">
     <div class="galeria">
-      {fotos.length
-        ? <img class="principal" src={fotos[0].url} alt={fotos[0].alt ?? nome} width="1200" height="900" />
-        : <div class="foto-ph principal">Fotos em breve</div>}
-      {fotos.length > 1 && (
-        <div class="miniaturas">
-          {fotos.slice(1).map((f) => <img src={f.url} alt={f.alt ?? nome} loading="lazy" width="300" height="225" />)}
-        </div>
-      )}
+      <GaleriaVeiculo fotos={fotos} titulo={nome} />
     </div>
     <aside class="painel">
       {vendido && <span class="selo">Vendido</span>}
