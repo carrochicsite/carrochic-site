@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro';
+import VehicleCard from '../components/VehicleCard.astro';
+import { SITE, TIPOS, waLink } from '../lib/site';
+import { supabase, CAMPOS } from '../lib/supabase';
+
+let { data: lista } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('destaque', true).order('updated_at', { ascending: false }).limit(6);
+if (!lista || lista.length === 0) {
+  ({ data: lista } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').order('created_at', { ascending: false }).limit(6));
+}
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+
+const wa = waLink('Olá! Vim pelo site da CARROCHIC e quero ajuda para escolher um veículo.');
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'AutoDealer',
+  name: SITE.nome, url: SITE.url, telephone: '+55' + SITE.whatsapp.slice(2), email: SITE.email,
+  areaServed: { '@type': 'City', name: SITE.cidade },
+}];
+const faq = [
+  ['Como funciona o atendimento?', 'Você escolhe o veículo no site e chama no WhatsApp. Um vendedor responde com fotos extras, condições e horário para ver o carro.'],
+  ['Dá para financiar?', 'Sim. Peça uma simulação pelo WhatsApp. As condições dependem da análise de crédito feita pela financeira.'],
+  ['Vocês atendem fora de Sete Lagoas?', 'O atendimento é em Sete Lagoas e região. Chame no WhatsApp para combinar.'],
+];
+---
+<Base
+  title="Carros, motos e caminhões em Sete Lagoas, MG | CARROCHIC®"
+  description="Carros, motos e caminhões à venda em Sete Lagoas, MG. Escolha no site e fale direto no WhatsApp com atendimento personalizado."
+  path="/"
+  jsonLd={jsonLd}
+>
+  <section class="hero">
+    <div class="wrap">
+      <h1>Carros, motos e caminhões em Sete Lagoas, direto no WhatsApp</h1>
+      <p>Escolha o veículo, veja as fotos e fale com quem atende você pelo nome. Sem fila e sem enrolação.</p>
+      <div class="acoes">
+        <a class="btn btn-primary" href={`/${TIPOS.carro.slug}`}>Ver veículos</a>
+        <a class="btn btn-ghost" href={wa} rel="noopener">Falar no WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <h2>O que você procura?</h2>
+    <div class="cats">
+      {Object.values(TIPOS).map((t) => (
+        <a class="cat" href={`/${t.slug}`}><strong>{t.rotulo}</strong><span>Ver {t.plural} em {SITE.cidade}</span></a>
+      ))}
+    </div>
+  </section>
+
+  {lista && lista.length > 0 && (
+    <section class="sec alt">
+      <div class="wrap">
+        <h2>Veículos em destaque</h2>
+        <div class="grid">{lista.map((v) => <VehicleCard v={v} />)}</div>
+      </div>
+    </section>
+  )}
+
+  <section class="sec wrap">
+    <h2>Como comprar</h2>
+    <ol class="passos">
+      <li><div class="step-n">1</div><h3>Escolha o veículo</h3><p>Veja fotos, preço e detalhes de cada anúncio.</p></li>
+      <li><div class="step-n">2</div><h3>Chame no WhatsApp</h3><p>A mensagem já vai pronta com o veículo escolhido.</p></li>
+      <li><div class="step-n">3</div><h3>Veja de perto e feche</h3><p>Combine a visita e, se quiser, simule o financiamento.</p></li>
+    </ol>
+  </section>
+
+  <section class="sec alt">
+    <div class="wrap">
+      <h2>Dúvidas frequentes</h2>
+      {faq.map(([q, a]) => <details><summary>{q}</summary><p>{a}</p></details>)}
+    </div>
+  </section>
+
+  <section class="sec cta">
+    <div class="wrap">
+      <h2>Não achou o que procura?</h2>
+      <p>Conte o modelo e o orçamento. Avisamos quando chegar um veículo assim.</p>
+      <a class="btn btn-primary" href={wa} rel="noopener">Falar no WhatsApp</a>
+    </div>
+  </section>
+</Base>
