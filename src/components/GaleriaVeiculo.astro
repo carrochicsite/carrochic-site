@@ -1,0 +1,109 @@
+---
+const { fotos = [], titulo = '' } = Astro.props;
+---
+{fotos.length === 0
+  ? <div class="gv-ph">Fotos em breve</div>
+  : (
+    <div class="gv" data-gv>
+      <div class="gv-palco">
+        <div class="gv-faixa" data-faixa tabindex="0" aria-label={`Fotos de ${titulo}`}>
+          {fotos.map((f, i) => (
+            <img
+              src={f.url}
+              alt={f.alt ?? `${titulo} - foto ${i + 1}`}
+              width="1200"
+              height="1200"
+              loading={i === 0 ? 'eager' : 'lazy'}
+              fetchpriority={i === 0 ? 'high' : undefined}
+            />
+          ))}
+        </div>
+        {fotos.length > 1 && (
+          <>
+            <button type="button" class="gv-seta gv-ant" data-ant aria-label="Foto anterior">‹</button>
+            <button type="button" class="gv-seta gv-prox" data-prox aria-label="Próxima foto">›</button>
+            <div class="gv-cont" data-cont>1 / {fotos.length}</div>
+          </>
+        )}
+      </div>
+      {fotos.length > 1 && (
+        <div class="gv-minis">
+          {fotos.map((f, i) => (
+            <button type="button" data-mini={i} class={i === 0 ? 'ativa' : ''} aria-label={`Ver foto ${i + 1}`}>
+              <img src={f.url} alt="" width="96" height="96" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
+
+<style>
+  .gv { width: 100%; max-width: 100%; }
+  .gv-palco { position: relative; border-radius: 12px; overflow: hidden; background: var(--navy, #0B1F3A); }
+  .gv-faixa { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .gv-faixa::-webkit-scrollbar { display: none; }
+  .gv-faixa img {
+    flex: 0 0 100%; width: 100%; height: auto;
+    aspect-ratio: 1 / 1; object-fit: contain;
+    scroll-snap-align: center; display: block;
+  }
+  .gv-seta {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border: 0; border-radius: 50%;
+    background: rgba(11, 31, 58, .75); color: #fff;
+    font-size: 28px; line-height: 1; cursor: pointer;
+  }
+  .gv-seta:hover { background: rgba(11, 31, 58, .95); }
+  .gv-ant { left: 8px; }
+  .gv-prox { right: 8px; }
+  .gv-cont {
+    position: absolute; right: 8px; bottom: 8px;
+    background: rgba(11, 31, 58, .75); color: #fff;
+    font-size: 13px; padding: 4px 10px; border-radius: 999px;
+  }
+  .gv-minis { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
+  .gv-minis button {
+    flex: 0 0 72px; padding: 0; border: 2px solid transparent;
+    border-radius: 8px; overflow: hidden; background: var(--navy, #0B1F3A); cursor: pointer;
+  }
+  .gv-minis button.ativa { border-color: var(--orange, #FF6A13); }
+  .gv-minis img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+  .gv-ph {
+    aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+    background: #eee; border-radius: 12px;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('[data-gv]').forEach((g) => {
+    const faixa = g.querySelector('[data-faixa]');
+    const total = faixa.querySelectorAll('img').length;
+    if (total < 2) return;
+    const minis = g.querySelectorAll('[data-mini]');
+    const cont = g.querySelector('[data-cont]');
+    let atual = 0;
+
+    const marcar = (i) => {
+      atual = i;
+      cont.textContent = `${i + 1} / ${total}`;
+      minis.forEach((m, k) => m.classList.toggle('ativa', k === i));
+    };
+    const ir = (i) => {
+      const alvo = (i + total) % total;
+      faixa.scrollTo({ left: alvo * faixa.clientWidth, behavior: 'smooth' });
+    };
+
+    faixa.addEventListener('scroll', () => {
+      const i = Math.round(faixa.scrollLeft / faixa.clientWidth);
+      if (i !== atual) marcar(i);
+    }, { passive: true });
+    g.querySelector('[data-ant]').addEventListener('click', () => ir(atual - 1));
+    g.querySelector('[data-prox]').addEventListener('click', () => ir(atual + 1));
+    minis.forEach((m, i) => m.addEventListener('click', () => ir(i)));
+    faixa.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); ir(atual - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); ir(atual + 1); }
+    });
+  });
+</script>
