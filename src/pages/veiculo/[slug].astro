@@ -76,7 +76,7 @@ const ficha: [string, string | number | null][] = [
     </aside>
   </div>
   {v.descricao && (
-    <section class="wrap" style="padding-bottom:3rem"><h2>Sobre este veículo</h2><p class="lead">{v.descricao}</p></section>
+    <section class="wrap sobre"><h2>Sobre este veículo</h2><p class="descricao" lang="pt-BR">{v.descricao}</p></section>
   )}
   {parecidos && parecidos.length > 0 && (
     <section class="sec alt"><div class="wrap"><h2>Veículos parecidos</h2><div class="grid">{parecidos.map((p) => <VehicleCard v={p} />)}</div></div></section>
