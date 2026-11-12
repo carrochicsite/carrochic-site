@@ -16,6 +16,9 @@ export const TIPOS: Record<string, { slug: string; rotulo: string; plural: strin
   utilitario: { slug: 'utilitarios-sete-lagoas', rotulo: 'Utilitários', plural: 'utilitários' },
 };
 
+// Quantos veículos aparecem por página nas listagens. Mude só aqui (ex.: 18 ou 24).
+export const POR_PAGINA = 12;
+
 export const NOINDEX = import.meta.env.PUBLIC_NOINDEX === 'true';
 
 export const brl = (n: number | null) =>
