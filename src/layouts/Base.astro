@@ -25,6 +25,7 @@ const wa = waLink(waMsg);
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content="#0B1F4B" />
+    <meta name="color-scheme" content="light" />
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pt_BR" />
@@ -43,10 +44,15 @@ const wa = waLink(waMsg);
     <header class="site-header">
       <div class="wrap">
         <a class="logo" href="/">CARRO<b>CHIC</b>®</a>
-        <nav aria-label="Principal">
+        <nav id="menu-principal" aria-label="Principal" data-menu>
           {Object.values(TIPOS).map((t) => <a href={`/${t.slug}`}>{t.rotulo}</a>)}
         </nav>
-        <a class="btn btn-primary" href={wa} rel="noopener">WhatsApp</a>
+        <div class="hd-acoes">
+          <a class="btn btn-primary" href={wa} rel="noopener">WhatsApp</a>
+          <button type="button" class="burger" data-burger aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </div>
     </header>
     <main><slot /></main>
@@ -68,3 +74,20 @@ const wa = waLink(waMsg);
     <a class="btn btn-wa wa-flutuante" href={wa} rel="noopener">Falar no WhatsApp</a>
   </body>
 </html>
+
+<script>
+  const burger = document.querySelector('[data-burger]');
+  const menu = document.querySelector('[data-menu]');
+  if (burger && menu) {
+    const alternar = (abrir) => {
+      menu.classList.toggle('aberto', abrir);
+      burger.classList.toggle('aberto', abrir);
+      burger.setAttribute('aria-expanded', String(abrir));
+      burger.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+    };
+    burger.addEventListener('click', () => alternar(!menu.classList.contains('aberto')));
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => alternar(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') alternar(false); });
+    window.matchMedia('(min-width: 861px)').addEventListener('change', (e) => { if (e.matches) alternar(false); });
+  }
+</script>
