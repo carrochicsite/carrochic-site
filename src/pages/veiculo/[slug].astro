@@ -1,0 +1,95 @@
+---
+import Base from '../../layouts/Base.astro';
+import VehicleCard from '../../components/VehicleCard.astro';
+import { SITE, TIPOS, brl, kmFmt, waLink } from '../../lib/site';
+import { supabase, CAMPOS, fotosOrdenadas, tituloVeiculo } from '../../lib/supabase';
+
+const { slug } = Astro.params;
+const { data: v } = await supabase.from('veiculos').select(CAMPOS).eq('slug', slug!).maybeSingle();
+
+if (!v) return new Response('Veículo não encontrado', { status: 404 });
+if (v.status === 'vendido' && v.vendido_em && Date.now() - new Date(v.vendido_em).getTime() > 60 * 86400000) {
+  return new Response('Este anúncio foi encerrado.', { status: 410 });
+}
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+
+const nome = tituloVeiculo(v);
+const fotos = fotosOrdenadas(v);
+const tipo = TIPOS[v.tipo] ?? TIPOS.carro;
+const vendido = v.status === 'vendido';
+const wa = waLink(`Olá! Vi o ${nome} no site da CARROCHIC (${SITE.url}/veiculo/${v.slug}) e tenho interesse.`);
+
+const { data: parecidos } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('tipo', v.tipo).neq('id', v.id).limit(3);
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org', '@type': 'Car',
+    name: `${nome} à venda em ${SITE.cidade}, ${SITE.uf}`,
+    brand: { '@type': 'Brand', name: v.marca }, model: v.modelo,
+    vehicleModelDate: String(v.ano_modelo ?? ''), color: v.cor ?? undefined, fuelType: v.combustivel ?? undefined,
+    vehicleTransmission: v.cambio ?? undefined,
+    mileageFromOdometer: v.km != null ? { '@type': 'QuantitativeValue', value: v.km, unitCode: 'KMT' } : undefined,
+    image: fotos.map((f) => f.url),
+    description: v.descricao ?? undefined,
+    offers: {
+      '@type': 'Offer', price: v.preco, priceCurrency: 'BRL',
+      availability: vendido ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      url: `${SITE.url}/veiculo/${v.slug}`,
+      seller: { '@type': 'AutoDealer', name: SITE.nome },
+    },
+  },
+  {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Início', item: SITE.url },
+      { '@type': 'ListItem', position: 2, name: `${tipo.rotulo} em ${SITE.cidade}`, item: `${SITE.url}/${tipo.slug}` },
+      { '@type': 'ListItem', position: 3, name: nome, item: `${SITE.url}/veiculo/${v.slug}` },
+    ],
+  },
+];
+const ficha: [string, string | number | null][] = [
+  ['Ano', v.ano_fabricacao && v.ano_modelo ? `${v.ano_fabricacao}/${v.ano_modelo}` : v.ano_modelo],
+  ['Quilometragem', kmFmt(v.km)], ['Câmbio', v.cambio], ['Combustível', v.combustivel], ['Cor', v.cor], ['Bairro', v.bairro],
+];
+---
+<Base
+  title={`${nome} à venda em ${SITE.cidade}, MG | ${SITE.nome}`}
+  description={`${nome}${v.km != null ? `, ${kmFmt(v.km)}` : ''}, por ${brl(v.preco)} em ${SITE.cidade}, ${SITE.uf}. Veja as fotos e fale no WhatsApp.`}
+  path={`/veiculo/${v.slug}`}
+  image={fotos[0]?.url}
+  jsonLd={jsonLd}
+  waMsg={`Olá! Vi o ${nome} no site da CARROCHIC e tenho interesse.`}
+>
+  <nav class="wrap crumbs" aria-label="Você está em">
+    <a href="/">Início</a> / <a href={`/${tipo.slug}`}>{tipo.rotulo} em {SITE.cidade}</a> / {nome}
+  </nav>
+  <div class="wrap veic">
+    <div class="galeria">
+      {fotos.length
+        ? <img class="principal" src={fotos[0].url} alt={fotos[0].alt ?? nome} width="1200" height="900" />
+        : <div class="foto-ph principal">Fotos em breve</div>}
+      {fotos.length > 1 && (
+        <div class="miniaturas">
+          {fotos.slice(1).map((f) => <img src={f.url} alt={f.alt ?? nome} loading="lazy" width="300" height="225" />)}
+        </div>
+      )}
+    </div>
+    <aside class="painel">
+      {vendido && <span class="selo">Vendido</span>}
+      <h1 style="font-size:1.8rem;font-stretch:108%">{nome} à venda em {SITE.cidade}</h1>
+      <div class="preco">{brl(v.preco)}</div>
+      {vendido
+        ? <a class="btn btn-primary" href={waLink(`Olá! Vi que o ${nome} foi vendido. Vocês têm algo parecido?`)} rel="noopener">Pedir um parecido</a>
+        : <a class="btn btn-wa" href={wa} rel="noopener">Falar no WhatsApp</a>}
+      <dl class="ficha">
+        {ficha.filter(([, val]) => val).map(([k, val]) => <><dt>{k}</dt><dd>{val}</dd></>)}
+      </dl>
+    </aside>
+  </div>
+  {v.descricao && (
+    <section class="wrap" style="padding-bottom:3rem"><h2>Sobre este veículo</h2><p class="lead">{v.descricao}</p></section>
+  )}
+  {parecidos && parecidos.length > 0 && (
+    <section class="sec alt"><div class="wrap"><h2>Veículos parecidos</h2><div class="grid">{parecidos.map((p) => <VehicleCard v={p} />)}</div></div></section>
+  )}
+</Base>
