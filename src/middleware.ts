@@ -1,10 +1,27 @@
 import { defineMiddleware } from 'astro:middleware';
 import { anonClient, userClient, COOKIE_ACCESS, COOKIE_REFRESH, cookieOpts } from './lib/admin';
+import { COOKIE_VENDEDOR, cookieVendedor, slugValido } from './lib/vendedor';
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const { pathname } = ctx.url;
-  if (pathname !== '/admin' && !pathname.startsWith('/admin/')) return next();
 
+  // ---- Páginas públicas: cookie do vendedor ----
+  if (pathname !== '/admin' && !pathname.startsWith('/admin/')) {
+    // /qualquer-pagina?v=fatima-rodrigues -> grava o cookie e limpa o endereço
+    const v = ctx.url.searchParams.get('v');
+    if (slugValido(v) && !pathname.startsWith('/v/') && !pathname.startsWith('/wa/')) {
+      ctx.cookies.set(COOKIE_VENDEDOR, v, cookieVendedor());
+      const limpo = new URL(ctx.url);
+      limpo.searchParams.delete('v');
+      return ctx.redirect(limpo.pathname + limpo.search, 302);
+    }
+    // renova o cookie a cada visita (mais 400 dias)
+    const atual = ctx.cookies.get(COOKIE_VENDEDOR)?.value;
+    if (slugValido(atual)) ctx.cookies.set(COOKIE_VENDEDOR, atual, cookieVendedor());
+    return next();
+  }
+
+  // ---- Painel (igual ao que já existia) ----
   const finish = async () => {
     const res = await next();
     res.headers.set('X-Robots-Tag', 'noindex, nofollow');
