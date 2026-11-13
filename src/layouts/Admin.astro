@@ -34,26 +34,4 @@ const { title = 'Painel', logado = true } = Astro.props;
       table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:.5rem; border-bottom:1px solid var(--line); vertical-align:middle; }
       th { font-size:.8rem; color:#5b6580; }
       .tag { font-size:.75rem; padding:.15rem .5rem; border-radius:99px; background:#e6e9f2; }
-      .tag.ativo { background:#e3f5ea; color:var(--ok); } .tag.vendido { background:#fdeceb; color:var(--bad); }
-      .row { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; } .row form { margin:0; }
-      .fotos { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.8rem; }
-      .foto { border:1px solid var(--line); border-radius:8px; padding:.4rem; background:#fafbfe; }
-      .foto img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; display:block; }
-      .foto.capa { outline:2px solid var(--navy); }
-      .thumb { width:64px; height:48px; object-fit:cover; border-radius:6px; background:#e6e9f2; display:block; }
-      .muted { color:#5b6580; font-size:.85rem; }
-      @media (max-width:640px){ .hide-m{display:none;} }
-    </style>
-  </head>
-  <body>
-    {logado && (
-      <div class="top">
-        <a href="/admin">CARROCHIC · painel</a>
-        <a href="/" target="_blank" rel="noopener" style="font-weight:400">ver site</a>
-        <span class="sp"></span>
-        <form method="post" action="/admin/logout"><button class="btn sec sm" type="submit">Sair</button></form>
-      </div>
-    )}
-    <div class="box"><slot /></div>
-  </body>
-</html>
+      .tag.ativo { background:#e3f5ea; color:var(--ok); }
