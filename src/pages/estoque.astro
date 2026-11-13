@@ -1,0 +1,124 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, TIPOS, brl, kmFmt } from '../lib/site';
+import { supabase, fotosOrdenadas, tituloVeiculo } from '../lib/supabase';
+import { COOKIE_VENDEDOR, slugValido, vendedorPublico } from '../lib/vendedor';
+
+// Catálogo Digital: todos os veículos ativos de uma vez, só com a foto de capa.
+// Sem cache público: o nome do vendedor muda por visitante e uma edição no painel vale na hora.
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+
+const PASSO = 40;
+const tipo = Astro.url.searchParams.get('tipo') ?? '';
+const max = Number(Astro.url.searchParams.get('max') ?? '') || 0;
+const n = Math.min(Math.max(Number(Astro.url.searchParams.get('n') ?? '') || PASSO, PASSO), 400);
+
+let q = supabase
+  .from('veiculos')
+  .select('id,slug,tipo,marca,modelo,versao,ano_modelo,km,preco,veiculo_fotos(url,alt,ordem,capa)')
+  .eq('status', 'ativo')
+  .order('created_at', { ascending: false })
+  .limit(n + 1);
+if (TIPOS[tipo]) q = q.eq('tipo', tipo);
+if (max > 0) q = q.lte('preco', max);
+const { data } = await q;
+const todos = data ?? [];
+const temMais = todos.length > n;
+const lista = todos.slice(0, n);
+
+const vslug = Astro.cookies.get(COOKIE_VENDEDOR)?.value;
+const vendedor = slugValido(vslug) ? await vendedorPublico(vslug) : null;
+
+const href = (p: Record<string, string | number>) => {
+  const u = new URLSearchParams();
+  const base: Record<string, string | number> = { tipo, max: max || '', ...p };
+  for (const [k, v] of Object.entries(base)) if (v) u.set(k, String(v));
+  const s = u.toString();
+  return s ? `/estoque?${s}` : '/estoque';
+};
+const faixas = [30000, 50000, 80000, 120000];
+---
+<Base
+  title="Catálogo de veículos em Sete Lagoas, MG | CARROCHIC®"
+  description="Todos os carros, motos, caminhões e utilitários à venda em Sete Lagoas, MG, em uma única página."
+  path="/estoque"
+>
+  <section class="wrap cat-topo">
+    <h1>Catálogo de veículos</h1>
+    {vendedor ? (
+      <p class="atende">Atendimento com <b>{vendedor.nome}</b></p>
+    ) : (
+      <p class="atende">Atendimento em {SITE.area}</p>
+    )}
+    <a class="btn btn-primary" href="/wa/geral" rel="nofollow">Falar no WhatsApp</a>
+  </section>
+
+  <section class="wrap filtros" aria-label="Filtros">
+    <div class="linha">
+      <a class={`chip ${tipo === '' ? 'on' : ''}`} href={href({ tipo: '', n: '' })}>Todos</a>
+      {Object.entries(TIPOS).map(([k, t]) => (
+        <a class={`chip ${tipo === k ? 'on' : ''}`} href={href({ tipo: k, n: '' })}>{t.rotulo}</a>
+      ))}
+    </div>
+    <div class="linha">
+      <span class="rot">Até</span>
+      <a class={`chip ${max === 0 ? 'on' : ''}`} href={href({ max: '', n: '' })}>Qualquer preço</a>
+      {faixas.map((f) => (
+        <a class={`chip ${max === f ? 'on' : ''}`} href={href({ max: f, n: '' })}>{brl(f).replace(',00', '')}</a>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap">
+    {lista.length === 0 ? (
+      <p class="vazio">Nenhum veículo com esses filtros. <a href="/estoque">Ver todos</a></p>
+    ) : (
+      <div class="cat-grid">
+        {lista.map((v: any, i: number) => {
+          const capa = fotosOrdenadas(v)[0];
+          const titulo = tituloVeiculo(v);
+          return (
+            <article class="cat-card">
+              <a href={`/veiculo/${v.slug}`} class="foto">
+                {capa
+                  ? <img src={capa.url} alt={capa.alt ?? `${titulo} - foto 1`} loading={i < 2 ? 'eager' : 'lazy'} decoding="async" />
+                  : <span class="sem">Sem foto</span>}
+              </a>
+              <div class="info">
+                <h2><a href={`/veiculo/${v.slug}`}>{titulo}</a></h2>
+                <p class="det">{[v.ano_modelo, kmFmt(v.km)].filter(Boolean).join(' · ')}</p>
+                <p class="preco">{brl(v.preco)}</p>
+                <a class="btn btn-primary" href={`/wa/${v.slug}`} rel="nofollow">Chamar no WhatsApp</a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    )}
+    {temMais && (
+      <p class="mais"><a class="btn btn-ghost" href={href({ n: n + PASSO })}>Ver mais veículos</a></p>
+    )}
+  </section>
+</Base>
+
+<style>
+  .cat-topo { padding-top: 1.5rem; }
+  .atende { margin: .2rem 0 1rem; font-size: 1.05rem; }
+  .filtros { display: grid; gap: .6rem; margin: 1rem auto; }
+  .linha { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .rot { font-weight: 600; margin-right: .2rem; }
+  .chip { padding: .35rem .8rem; border: 1px solid #0B1F4B; border-radius: 99px; color: #0B1F4B; text-decoration: none; font-size: .9rem; background: #fff; }
+  .chip.on { background: #0B1F4B; color: #fff; }
+  .cat-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .cat-card { border: 1px solid #d9deea; border-radius: 10px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+  .foto { display: block; aspect-ratio: 4 / 3; background: #e6e9f2; }
+  .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sem { display: grid; place-items: center; height: 100%; color: #5b6580; }
+  .info { padding: .8rem; display: grid; gap: .3rem; }
+  .info h2 { font-size: 1.05rem; margin: 0; }
+  .info h2 a { color: inherit; text-decoration: none; }
+  .det { margin: 0; color: #5b6580; font-size: .9rem; }
+  .preco { margin: 0; font-size: 1.25rem; font-weight: 700; color: #0B1F4B; }
+  .vazio { padding: 2rem 0; }
+  .mais { text-align: center; margin: 1.5rem 0 2rem; }
+</style>
