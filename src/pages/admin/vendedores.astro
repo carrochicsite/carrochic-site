@@ -1,0 +1,118 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { slugify, texto } from '../../lib/admin';
+
+const sb = Astro.locals.sb;
+let erro = '';
+
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const acao = String(f.get('acao') ?? '');
+  const id = texto(f.get('id'));
+
+  if (acao === 'excluir' && id) {
+    const { error } = await sb.from('vendedores').delete().eq('id', id);
+    if (!error) return Astro.redirect('/admin/vendedores?ok=excluido', 303);
+    erro = error.message;
+  } else if (acao === 'ativo' && id) {
+    const { error } = await sb.from('vendedores').update({ ativo: f.get('ativo') === '1', updated_at: new Date().toISOString() }).eq('id', id);
+    if (!error) return Astro.redirect('/admin/vendedores?ok=salvo', 303);
+    erro = error.message;
+  } else if (acao === 'salvar') {
+    const nome = texto(f.get('nome'));
+    let whats = (texto(f.get('whatsapp')) ?? '').replace(/\D/g, '');
+    if (whats.length === 10 || whats.length === 11) whats = '55' + whats;
+    const slug = slugify(texto(f.get('slug')) ?? nome ?? '');
+    const campos = {
+      nome,
+      slug,
+      whatsapp: whats,
+      foto_url: texto(f.get('foto_url')),
+      ativo: f.get('ativo') === 'on',
+      autorizou_divulgacao: f.get('autorizou') === 'on',
+    };
+    if (!nome) erro = 'Informe o nome do vendedor.';
+    else if (!slug) erro = 'Informe o link (slug) do vendedor.';
+    else if (whats.length < 12 || whats.length > 13) erro = 'WhatsApp inválido. Use DDD + número, por exemplo (31) 99999-9999.';
+    else {
+      const { error } = id
+        ? await sb.from('vendedores').update({ ...campos, updated_at: new Date().toISOString() }).eq('id', id)
+        : await sb.from('vendedores').insert(campos);
+      if (!error) return Astro.redirect('/admin/vendedores?ok=salvo', 303);
+      erro = error.code === '23505' ? 'Já existe um vendedor com esse link (slug).' : error.message;
+    }
+  }
+}
+
+const { data, error: erroLista } = await sb
+  .from('vendedores')
+  .select('id,nome,slug,whatsapp,foto_url,ativo,autorizou_divulgacao')
+  .order('nome');
+const lista = data ?? [];
+const ok = Astro.url.searchParams.get('ok');
+const msgs: Record<string, string> = { salvo: 'Vendedor salvo.', excluido: 'Vendedor excluído.' };
+const editando = lista.find((v: any) => v.id === Astro.url.searchParams.get('editar'));
+const origem = Astro.url.origin;
+---
+<Admin title="Vendedores">
+  <h1>Vendedores ({lista.length})</h1>
+  {ok && msgs[ok] && <div class="msg ok">{msgs[ok]}</div>}
+  {(erro || erroLista) && <div class="msg erro">{erro || erroLista?.message}</div>}
+
+  <div class="card" style="padding:.3rem .6rem;overflow-x:auto">
+    {lista.length === 0 ? <p class="muted">Nenhum vendedor cadastrado.</p> : (
+      <table>
+        <thead><tr><th>Nome</th><th>Link para divulgar</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {lista.map((v: any) => (
+            <tr>
+              <td><b>{v.nome}</b><br /><span class="muted">{v.whatsapp}</span></td>
+              <td><span class="muted">{origem}/v/{v.slug}</span></td>
+              <td>
+                <span class={`tag ${v.ativo ? 'ativo' : ''}`}>{v.ativo ? 'ativo' : 'inativo'}</span>
+                {!v.autorizou_divulgacao && <span class="tag vendido">sem autorização</span>}
+              </td>
+              <td class="row">
+                <a class="btn sm sec" href={`/admin/vendedores?editar=${v.id}`}>Editar</a>
+                <form method="post">
+                  <input type="hidden" name="acao" value="ativo" />
+                  <input type="hidden" name="id" value={v.id} />
+                  <input type="hidden" name="ativo" value={v.ativo ? '0' : '1'} />
+                  <button class="btn sm sec" type="submit">{v.ativo ? 'Desativar' : 'Ativar'}</button>
+                </form>
+                <form method="post" onsubmit="return confirm('Excluir este vendedor?')">
+                  <input type="hidden" name="acao" value="excluir" />
+                  <input type="hidden" name="id" value={v.id} />
+                  <button class="btn sm red" type="submit">Excluir</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <div class="card">
+    <h2>{editando ? `Editar ${editando.nome}` : 'Novo vendedor'}</h2>
+    <form method="post">
+      <input type="hidden" name="acao" value="salvar" />
+      {editando && <input type="hidden" name="id" value={editando.id} />}
+      <div class="grid">
+        <div><label for="nome">Nome</label><input id="nome" name="nome" required value={editando?.nome ?? ''} /></div>
+        <div><label for="slug">Link (slug)</label><input id="slug" name="slug" placeholder="fatima-rodrigues" value={editando?.slug ?? ''} /></div>
+        <div><label for="whatsapp">WhatsApp (com DDD)</label><input id="whatsapp" name="whatsapp" inputmode="tel" required value={editando?.whatsapp ?? ''} /></div>
+        <div><label for="foto_url">Foto (endereço, opcional)</label><input id="foto_url" name="foto_url" value={editando?.foto_url ?? ''} /></div>
+      </div>
+      <div class="row" style="margin:.8rem 0">
+        <label style="display:flex;gap:.4rem;align-items:center;margin:0"><input type="checkbox" name="ativo" style="width:auto" checked={editando ? editando.ativo : true} /> Ativo</label>
+        <label style="display:flex;gap:.4rem;align-items:center;margin:0"><input type="checkbox" name="autorizou" style="width:auto" checked={editando ? editando.autorizou_divulgacao : false} /> Autorizou divulgar nome e WhatsApp</label>
+      </div>
+      <div class="row">
+        <button class="btn" type="submit">Salvar vendedor</button>
+        {editando && <a class="btn sec" href="/admin/vendedores">Cancelar</a>}
+      </div>
+      <p class="muted">O número fica guardado no banco e só o servidor o usa no botão de WhatsApp. Ele não aparece no site.</p>
+    </form>
+  </div>
+</Admin>
