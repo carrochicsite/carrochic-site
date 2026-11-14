@@ -70,7 +70,7 @@ const wa = `/wa/${waSlug ?? 'geral'}`;
             {Object.values(TIPOS).map((t) => <li><a href={`/${t.slug}`}>{t.rotulo} em {SITE.cidade}</a></li>)}
           </ul>
         </div>
-        <p class="fine">© {new Date().getFullYear()} {SITE.nome} — {SITE.cidade}, {SITE.uf}</p>
+        <p class="fine">© {new Date().getFullYear()} {SITE.nome} — {SITE.cidade}, {SITE.uf} · <a href="/privacidade">Política de Privacidade</a> · <a href="/termos">Termos de Uso</a></p>
       </div>
     </footer>
     <a class="btn btn-wa wa-flutuante" href={wa} rel="nofollow noopener">Falar no WhatsApp</a>
