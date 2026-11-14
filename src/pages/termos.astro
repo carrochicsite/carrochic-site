@@ -1,0 +1,58 @@
+---
+import Legal from '../layouts/Legal.astro';
+import { SITE } from '../lib/site';
+---
+<Legal
+  title="Termos de Uso | CARROCHIC®"
+  description="Regras de uso do site CARROCHIC®: anúncios de veículos em Sete Lagoas, contato por WhatsApp, financiamento e responsabilidades."
+  path="/termos"
+  atualizado="13 de novembro de 2026"
+>
+  <p>
+    Ao usar o site <b>{SITE.nome}</b>, você concorda com estes termos. Se não concordar, pedimos que não utilize o site.
+    O tratamento dos seus dados está explicado na <a href="/privacidade">Política de Privacidade</a>.
+  </p>
+
+  <h2>1. Quem somos e o que o site faz</h2>
+  <p>
+    O site é operado por <b>{SITE.responsavel}</b>, pessoa física, sob a marca {SITE.nome}, com atendimento em {SITE.area} ({SITE.cidade}, {SITE.uf}).
+    Ele divulga veículos à venda (carros, motos, caminhões e utilitários) e facilita o seu contato por WhatsApp. Não há loja física aberta ao público: o atendimento é combinado previamente.
+    Contato: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+  </p>
+
+  <h2>2. O site não vende pela internet</h2>
+  <p>O site é uma vitrine. Ele <b>não recebe pagamentos</b> e <b>não fecha negócios</b>. A compra e venda só existe depois que as partes combinam as condições diretamente e formalizam a negociação, incluindo a documentação de transferência do veículo.</p>
+
+  <h2>3. Informações dos anúncios</h2>
+  <ul>
+    <li>Preço, quilometragem, ano, equipamentos, descrição e fotos são publicados de boa-fé, mas podem conter erros ou estar desatualizados. Confirme tudo com o atendimento antes de decidir.</li>
+    <li>Os anúncios podem ser alterados ou retirados a qualquer momento, e o veículo pode já ter sido vendido quando você entrar em contato.</li>
+    <li>"Consulte" no preço significa que o valor deve ser confirmado pelo atendimento.</li>
+    <li>Fotos são ilustrativas do veículo anunciado; detalhes de estado e conservação devem ser verificados pessoalmente.</li>
+    <li>Recomendamos sempre ver o veículo, fazer teste, conferir a documentação e, se quiser, solicitar uma vistoria independente antes de fechar negócio.</li>
+  </ul>
+
+  <h2>4. Contato e vendedores parceiros</h2>
+  <p>Os botões de WhatsApp abrem uma conversa com a {SITE.nome} ou com um vendedor parceiro que tenha indicado o site a você. Os vendedores parceiros divulgam o catálogo com autorização e atendem em nome da {SITE.nome}. Nenhum vendedor está autorizado a pedir pagamentos fora das condições combinadas e formalizadas com o responsável pelo negócio.</p>
+  <div class="aviso">
+    <b>Cuidado com golpes.</b> O site não recebe pagamentos. Desconfie de pedidos de depósito antecipado ou de "reserva" por Pix sem que você tenha visto o veículo e conferido a documentação. Em caso de dúvida, fale com a gente pelo e-mail <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+  </div>
+
+  <h2>5. Financiamento</h2>
+  <p>Quando o site oferecer informações ou formulário de financiamento, a análise de crédito, as taxas, o prazo e a aprovação são de responsabilidade exclusiva da instituição financeira. A {SITE.nome} não garante aprovação nem condições específicas, e simulações são apenas estimativas.</p>
+
+  <h2>6. Uso correto do site</h2>
+  <p>Você concorda em não: usar o site para fins ilegais ou fraudulentos; tentar acessar áreas restritas, como o painel administrativo; sobrecarregar ou interferir no funcionamento do site; copiar em massa o conteúdo por meios automáticos; ou informar dados falsos nos formulários.</p>
+
+  <h2>7. Propriedade intelectual</h2>
+  <p>A marca {SITE.nome}, o logotipo, os textos, o design e as fotos do site pertencem ao responsável ou são usados com autorização, e estão protegidos pela legislação. Não é permitido reproduzi-los sem autorização por escrito, salvo o compartilhamento de links dos anúncios.</p>
+
+  <h2>8. Responsabilidade</h2>
+  <p>Trabalhamos para manter o site no ar e as informações corretas, mas ele é oferecido "como está", sem garantia de funcionamento ininterrupto. Na medida permitida pela lei, não respondemos por instabilidades de internet ou de serviços de terceiros (como o WhatsApp), nem por decisões tomadas apenas com base nas informações do anúncio sem a devida conferência. Nada nestes termos limita direitos que a lei assegura ao consumidor, inclusive os do Código de Defesa do Consumidor.</p>
+
+  <h2>9. Links para outros sites</h2>
+  <p>O site pode conter links para páginas de terceiros. Não controlamos o conteúdo nem as políticas desses sites e não nos responsabilizamos por eles.</p>
+
+  <h2>10. Alterações e lei aplicável</h2>
+  <p>Podemos atualizar estes termos a qualquer momento; vale a versão publicada nesta página, com a data no topo. Estes termos seguem a lei brasileira. Fica eleito o foro da comarca de {SITE.cidade}, {SITE.uf}, ressalvado o direito do consumidor de ajuizar ação no foro do seu domicílio.</p>
+</Legal>
