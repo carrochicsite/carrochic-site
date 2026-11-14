@@ -1,93 +1,85 @@
 ---
-import '../styles/global.css';
-import { SITE, NOINDEX, TIPOS, waLink } from '../lib/site';
-
-interface Props {
-  title: string;
-  description: string;
-  path?: string;
-  image?: string;
-  noindex?: boolean;
-  jsonLd?: object[];
-  waMsg?: string;
+import Base from '../../layouts/Base.astro';
+import VehicleCard from '../../components/VehicleCard.astro';
+import GaleriaVeiculo from '../../components/GaleriaVeiculo.astro';
+import { SITE, TIPOS, brl, kmFmt } from '../../lib/site';
+import { supabase, CAMPOS, fotosOrdenadas, tituloVeiculo } from '../../lib/supabase';
+const { slug } = Astro.params;
+const { data: v } = await supabase.from('veiculos').select(CAMPOS).eq('slug', slug!).maybeSingle();
+if (!v) return new Response('Veículo não encontrado', { status: 404 });
+if (v.status === 'vendido' && v.vendido_em && Date.now() - new Date(v.vendido_em).getTime() > 60 * 86400000) {
+  return new Response('Este anúncio foi encerrado.', { status: 410 });
 }
-const { title, description, path = Astro.url.pathname, image, noindex = false, jsonLd = [], waMsg = 'Olá! Vim pelo site da CARROCHIC e quero saber mais sobre os veículos.' } = Astro.props;
-const canonical = new URL(path, SITE.url).toString();
-const robots = NOINDEX || noindex ? 'noindex, nofollow' : 'index, follow';
-const wa = waLink(waMsg);
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+const nome = tituloVeiculo(v);
+const fotos = fotosOrdenadas(v);
+const tipo = TIPOS[v.tipo] ?? TIPOS.carro;
+const vendido = v.status === 'vendido';
+// O botão passa pela rota /wa/, que escolhe o número do vendedor no servidor.
+const wa = `/wa/${v.slug}`;
+const { data: parecidos } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('tipo', v.tipo).neq('id', v.id).limit(3);
+const jsonLd = [
+  {
+    '@context': 'https://schema.org', '@type': 'Car',
+    name: `${nome} à venda em ${SITE.cidade}, ${SITE.uf}`,
+    brand: { '@type': 'Brand', name: v.marca }, model: v.modelo,
+    vehicleModelDate: String(v.ano_modelo ?? ''), color: v.cor ?? undefined, fuelType: v.combustivel ?? undefined,
+    vehicleTransmission: v.cambio ?? undefined,
+    mileageFromOdometer: v.km != null ? { '@type': 'QuantitativeValue', value: v.km, unitCode: 'KMT' } : undefined,
+    image: fotos.map((f) => f.url),
+    description: v.descricao ?? undefined,
+    offers: {
+      '@type': 'Offer', price: v.preco, priceCurrency: 'BRL',
+      availability: vendido ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      url: `${SITE.url}/veiculo/${v.slug}`,
+      seller: { '@type': 'AutoDealer', name: SITE.nome },
+    },
+  },
+  {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Início', item: SITE.url },
+      { '@type': 'ListItem', position: 2, name: `${tipo.rotulo} em ${SITE.cidade}`, item: `${SITE.url}/${tipo.slug}` },
+      { '@type': 'ListItem', position: 3, name: nome, item: `${SITE.url}/veiculo/${v.slug}` },
+    ],
+  },
+];
+const ficha: [string, string | number | null][] = [
+  ['Ano', v.ano_fabricacao && v.ano_modelo ? `${v.ano_fabricacao}/${v.ano_modelo}` : v.ano_modelo],
+  ['Quilometragem', kmFmt(v.km)], ['Câmbio', v.cambio], ['Combustível', v.combustivel], ['Cor', v.cor], ['Bairro', v.bairro],
+];
 ---
-<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <meta name="robots" content={robots} />
-    <meta name="theme-color" content="#0B1F4B" />
-    <meta name="color-scheme" content="light" />
-    <link rel="canonical" href={canonical} />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="pt_BR" />
-    <meta property="og:site_name" content={SITE.nome} />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    {image && <meta property="og:image" content={image} />}
-    {image && <meta name="twitter:card" content="summary_large_image" />}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,400..800;1,100..125,800&family=Barlow:wght@400;500;600&display=swap" />
-    {jsonLd.map((j) => <script type="application/ld+json" set:html={JSON.stringify(j)} />)}
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="wrap">
-        <a class="logo" href="/">CARRO<b>CHIC</b>®</a>
-        <nav id="menu-principal" aria-label="Principal" data-menu>
-          {Object.values(TIPOS).map((t) => <a href={`/${t.slug}`}>{t.rotulo}</a>)}
-        </nav>
-        <div class="hd-acoes">
-          <a class="btn btn-primary" href={wa} rel="noopener">WhatsApp</a>
-          <button type="button" class="burger" data-burger aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal">
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-      </div>
-    </header>
-    <main><slot /></main>
-    <footer class="site-footer">
-      <div class="wrap">
-        <a class="logo" href="/">CARRO<b>CHIC</b>®</a>
-        <div class="cols">
-          <div>
-            <p>Atendimento personalizado em {SITE.area}.</p>
-            <p><a href={wa} rel="noopener">WhatsApp {SITE.telefone}</a><br /><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
-          </div>
-          <ul>
-            {Object.values(TIPOS).map((t) => <li><a href={`/${t.slug}`}>{t.rotulo} em {SITE.cidade}</a></li>)}
-          </ul>
-        </div>
-        <p class="fine">© {new Date().getFullYear()} {SITE.nome} — {SITE.cidade}, {SITE.uf}</p>
-      </div>
-    </footer>
-    <a class="btn btn-wa wa-flutuante" href={wa} rel="noopener">Falar no WhatsApp</a>
-  </body>
-</html>
-
-<script>
-  const burger = document.querySelector('[data-burger]');
-  const menu = document.querySelector('[data-menu]');
-  if (burger && menu) {
-    const alternar = (abrir) => {
-      menu.classList.toggle('aberto', abrir);
-      burger.classList.toggle('aberto', abrir);
-      burger.setAttribute('aria-expanded', String(abrir));
-      burger.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
-    };
-    burger.addEventListener('click', () => alternar(!menu.classList.contains('aberto')));
-    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => alternar(false)));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') alternar(false); });
-    window.matchMedia('(min-width: 861px)').addEventListener('change', (e) => { if (e.matches) alternar(false); });
-  }
-</script>
+<Base
+  title={`${nome} à venda em ${SITE.cidade}, MG | ${SITE.nome}`}
+  description={`${nome}${v.km != null ? `, ${kmFmt(v.km)}` : ''}, por ${brl(v.preco)} em ${SITE.cidade}, ${SITE.uf}. Veja as fotos e fale no WhatsApp.`}
+  path={`/veiculo/${v.slug}`}
+  image={fotos[0]?.url}
+  jsonLd={jsonLd}
+  waSlug={v.slug}
+>
+  <nav class="wrap crumbs" aria-label="Você está em">
+    <a href="/">Início</a> / <a href={`/${tipo.slug}`}>{tipo.rotulo} em {SITE.cidade}</a> / {nome}
+  </nav>
+  <div class="wrap veic">
+    <div class="galeria">
+      <GaleriaVeiculo fotos={fotos} titulo={nome} />
+    </div>
+    <aside class="painel">
+      {vendido && <span class="selo">Vendido</span>}
+      <h1 style="font-size:1.8rem;font-stretch:108%">{nome} à venda em {SITE.cidade}</h1>
+      <div class="preco">{brl(v.preco)}</div>
+      {vendido
+        ? <a class="btn btn-primary" href="/wa/geral" rel="nofollow noopener">Pedir um parecido</a>
+        : <a class="btn btn-wa" href={wa} rel="nofollow noopener">Falar no WhatsApp</a>}
+      <dl class="ficha">
+        {ficha.filter(([, val]) => val).map(([k, val]) => <><dt>{k}</dt><dd>{val}</dd></>)}
+      </dl>
+    </aside>
+  </div>
+  {v.descricao && (
+    <section class="wrap sobre"><h2>Sobre este veículo</h2><p class="descricao" lang="pt-BR">{v.descricao}</p></section>
+  )}
+  {parecidos && parecidos.length > 0 && (
+    <section class="sec alt"><div class="wrap"><h2>Veículos parecidos</h2><div class="grid">{parecidos.map((p) => <VehicleCard v={p} />)}</div></div></section>
+  )}
+</Base>
