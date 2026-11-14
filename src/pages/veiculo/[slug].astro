@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import VehicleCard from '../../components/VehicleCard.astro';
 import GaleriaVeiculo from '../../components/GaleriaVeiculo.astro';
-import { SITE, TIPOS, brl, kmFmt, waLink } from '../../lib/site';
+import { SITE, TIPOS, brl, kmFmt } from '../../lib/site';
 import { supabase, CAMPOS, fotosOrdenadas, tituloVeiculo } from '../../lib/supabase';
 const { slug } = Astro.params;
 const { data: v } = await supabase.from('veiculos').select(CAMPOS).eq('slug', slug!).maybeSingle();
@@ -15,7 +15,8 @@ const nome = tituloVeiculo(v);
 const fotos = fotosOrdenadas(v);
 const tipo = TIPOS[v.tipo] ?? TIPOS.carro;
 const vendido = v.status === 'vendido';
-const wa = waLink(`Olá! Vi o ${nome} no site da CARROCHIC (${SITE.url}/veiculo/${v.slug}) e tenho interesse.`);
+// O botão passa pela rota /wa/, que escolhe o número do vendedor no servidor.
+const wa = `/wa/${v.slug}`;
 const { data: parecidos } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('tipo', v.tipo).neq('id', v.id).limit(3);
 const jsonLd = [
   {
@@ -54,7 +55,7 @@ const ficha: [string, string | number | null][] = [
   path={`/veiculo/${v.slug}`}
   image={fotos[0]?.url}
   jsonLd={jsonLd}
-  waMsg={`Olá! Vi o ${nome} no site da CARROCHIC e tenho interesse.`}
+  waSlug={v.slug}
 >
   <nav class="wrap crumbs" aria-label="Você está em">
     <a href="/">Início</a> / <a href={`/${tipo.slug}`}>{tipo.rotulo} em {SITE.cidade}</a> / {nome}
@@ -68,8 +69,8 @@ const ficha: [string, string | number | null][] = [
       <h1 style="font-size:1.8rem;font-stretch:108%">{nome} à venda em {SITE.cidade}</h1>
       <div class="preco">{brl(v.preco)}</div>
       {vendido
-        ? <a class="btn btn-primary" href={waLink(`Olá! Vi que o ${nome} foi vendido. Vocês têm algo parecido?`)} rel="noopener">Pedir um parecido</a>
-        : <a class="btn btn-wa" href={wa} rel="noopener">Falar no WhatsApp</a>}
+        ? <a class="btn btn-primary" href="/wa/geral" rel="nofollow noopener">Pedir um parecido</a>
+        : <a class="btn btn-wa" href={wa} rel="nofollow noopener">Falar no WhatsApp</a>}
       <dl class="ficha">
         {ficha.filter(([, val]) => val).map(([k, val]) => <><dt>{k}</dt><dd>{val}</dd></>)}
       </dl>
