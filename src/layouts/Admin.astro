@@ -35,3 +35,22 @@ const { title = 'Painel', logado = true } = Astro.props;
       th { font-size:.8rem; color:#5b6580; }
       .tag { font-size:.75rem; padding:.15rem .5rem; border-radius:99px; background:#e6e9f2; }
       .tag.ativo { background:#e3f5ea; color:var(--ok); }
+    </style>
+  </head>
+  <body>
+    {logado && (
+      <div class="top">
+        <a href="/admin">CARROCHIC admin</a>
+        <a href="/admin/vendedores">vendedores</a>
+        <span class="sp"></span>
+        <a href="/" target="_blank" rel="noopener">ver site</a>
+        <form method="post" action="/admin/sair">
+          <button class="btn sec sm" type="submit">Sair</button>
+        </form>
+      </div>
+    )}
+    <div class="box">
+      <slot />
+    </div>
+  </body>
+</html>
