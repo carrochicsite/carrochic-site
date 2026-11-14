@@ -1,0 +1,67 @@
+---
+import Legal from '../layouts/Legal.astro';
+import { SITE } from '../lib/site';
+---
+<Legal
+  title="Política de Privacidade | CARROCHIC®"
+  description="Como a CARROCHIC® trata seus dados pessoais, o que são os cookies do site e como exercer seus direitos pela LGPD."
+  path="/privacidade"
+  atualizado="13 de novembro de 2026"
+>
+  <p>
+    Esta política explica, em linguagem simples, quais dados pessoais o site <b>{SITE.nome}</b> trata, para que serve cada um e quais são os seus direitos,
+    conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).
+  </p>
+
+  <h2>1. Quem é o responsável pelos seus dados</h2>
+  <p>
+    O controlador dos dados é <b>{SITE.responsavel}</b>, pessoa física, que atua sob a marca {SITE.nome} em {SITE.area} ({SITE.cidade}, {SITE.uf}).
+    Para qualquer assunto sobre privacidade, escreva para <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+  </p>
+
+  <h2>2. Quais dados tratamos e para quê</h2>
+  <ul>
+    <li><b>Navegação no site.</b> Ao acessar o site, os servidores que o hospedam recebem dados técnicos como endereço IP, tipo de aparelho e navegador, páginas acessadas, data e hora. Usamos isso para entregar as páginas, manter a segurança e corrigir erros.</li>
+    <li><b>Cookie do vendedor.</b> Se você chegar por um link de vendedor parceiro, guardamos no seu navegador um cookie com o identificador desse vendedor (veja o item 3).</li>
+    <li><b>Cliques no botão de WhatsApp.</b> Quando você toca em um botão de WhatsApp, registramos que o clique aconteceu: a página de onde você veio, o veículo (se houver), o vendedor associado e a data e hora. Não registramos seu nome nem seu número de telefone nessa etapa.</li>
+    <li><b>Formulários.</b> Se você preencher um formulário no site (por exemplo, de interesse em financiamento), tratamos os dados que informar, como nome, WhatsApp, veículo de interesse e valor de entrada, somente para responder ao seu pedido, e apenas com o seu consentimento.</li>
+    <li><b>Conversa no WhatsApp.</b> A conversa acontece dentro do WhatsApp, fora do nosso site. O seu número e as mensagens ficam disponíveis para quem atender você (nós ou o vendedor parceiro) e seguem também as regras do WhatsApp.</li>
+  </ul>
+  <p>Não coletamos dados sensíveis, não vendemos seus dados e não os usamos para enviar publicidade sem o seu consentimento.</p>
+
+  <h2>3. Cookies</h2>
+  <p>Cookie é um pequeno arquivo que o site grava no seu navegador. Hoje o site usa apenas o cookie abaixo:</p>
+  <ul>
+    <li><b>cc_v (cookie do vendedor):</b> guarda qual vendedor parceiro indicou o site a você, para que o botão de WhatsApp abra a conversa com ele. Dura até 400 dias, é renovado a cada visita e só é gravado se você entrar por um link de vendedor. Se você chegar sem link, ele não é criado.</li>
+  </ul>
+  <p>
+    Esse cookie não é usado para publicidade nem para acompanhar você em outros sites. Você pode apagá-lo a qualquer momento nas configurações do navegador; nesse caso, o botão de WhatsApp passa a abrir o contato principal da {SITE.nome}.
+    Se um dia passarmos a usar cookies de medição (como o Google Analytics) ou de publicidade, esta política será atualizada e pediremos o seu consentimento.
+  </p>
+
+  <h2>4. Bases legais</h2>
+  <p>Tratamos seus dados com base na LGPD, principalmente em: <b>execução de procedimentos preliminares ligados a um contrato</b> a seu pedido (responder seu contato sobre um veículo), <b>legítimo interesse</b> (segurança do site e medição do desempenho dos botões, sem identificar você) e <b>consentimento</b> (formulários e comunicações opcionais).</p>
+
+  <h2>5. Com quem compartilhamos</h2>
+  <ul>
+    <li><b>Vendedores parceiros:</b> recebem o seu contato apenas quando você os procura pelo WhatsApp ou preenche um formulário a eles relacionado. Cada vendedor só aparece no site com a própria autorização.</li>
+    <li><b>Prestadores de tecnologia:</b> Cloudflare (hospedagem e entrega do site), Supabase (banco de dados, em servidores no Brasil) e Google Fonts (fontes de texto, o que faz o seu navegador se conectar ao Google). Eles tratam dados apenas para prestar o serviço.</li>
+    <li><b>Instituições financeiras:</b> se você pedir uma proposta de financiamento, seus dados poderão ser enviados à instituição escolhida para a análise de crédito, mediante o seu consentimento.</li>
+    <li><b>Autoridades:</b> quando houver obrigação legal ou ordem judicial.</li>
+  </ul>
+
+  <h2>6. Por quanto tempo guardamos</h2>
+  <p>Guardamos os dados pelo tempo necessário para cumprir as finalidades acima e as obrigações legais. Dados de formulários e conversas são eliminados quando deixam de ser necessários ou quando você pede a exclusão, ressalvadas as hipóteses em que a lei exija a guarda.</p>
+
+  <h2>7. Seus direitos</h2>
+  <p>Você pode pedir, a qualquer momento e sem custo: confirmação de que tratamos seus dados; acesso; correção; anonimização, bloqueio ou eliminação de dados desnecessários; portabilidade; informação sobre com quem compartilhamos; e a revogação do consentimento. Para isso, escreva para <a href={`mailto:${SITE.email}`}>{SITE.email}</a>. Se não ficar satisfeito, você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).</p>
+
+  <h2>8. Segurança</h2>
+  <p>Adotamos medidas técnicas para proteger os dados, como conexão segura (HTTPS), acesso restrito ao painel administrativo e separação entre o que é público e o que só o servidor pode ler. Nenhum sistema é totalmente imune, mas agimos rapidamente em caso de incidente e comunicaremos você e a ANPD quando a lei exigir.</p>
+
+  <h2>9. Menores de idade</h2>
+  <p>O site é voltado a maiores de 18 anos. Não coletamos dados de crianças e adolescentes de forma intencional.</p>
+
+  <h2>10. Alterações desta política</h2>
+  <p>Podemos atualizar este texto para refletir mudanças no site ou na lei. A data da última atualização aparece no topo da página.</p>
+</Legal>
