@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 export const GET: APIRoute = async () => {
   const { data } = await supabase.from('veiculos').select('slug,updated_at').eq('status', 'ativo');
-  const estaticas = ['/', ...Object.values(TIPOS).map((t) => `/${t.slug}`)];
+  const estaticas = ['/', ...Object.values(TIPOS).map((t) => `/${t.slug}`), '/privacidade', '/termos'];
   const urls = [
     ...estaticas.map((p) => `<url><loc>${SITE.url}${p === '/' ? '' : p}</loc></url>`),
     ...(data ?? []).map((v) => `<url><loc>${SITE.url}/veiculo/${v.slug}</loc><lastmod>${new Date(v.updated_at).toISOString()}</lastmod></url>`),
