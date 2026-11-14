@@ -1,0 +1,32 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  atualizado: string;
+}
+const { title, description, path, atualizado } = Astro.props;
+---
+<Base title={title} description={description} path={path}>
+  <div class="wrap legal">
+    <nav class="crumbs" aria-label="Você está em"><a href="/">Início</a> › {title.split(' | ')[0]}</nav>
+    <article>
+      <h1>{title.split(' | ')[0]}</h1>
+      <p class="fine">Última atualização: {atualizado}</p>
+      <slot />
+    </article>
+  </div>
+</Base>
+
+<style>
+  .legal { padding: 1rem 0 4rem; }
+  .legal article { max-width: 72ch; }
+  .legal h1 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); margin-top: 1rem; }
+  .legal :global(h2) { font-size: clamp(1.25rem, 3vw, 1.55rem); font-style: normal; font-stretch: 100%; margin: 2.2rem 0 .6rem; }
+  .legal :global(p), .legal :global(li) { color: var(--ink); }
+  .legal :global(ul) { padding-left: 1.3rem; margin: .4rem 0 1rem; }
+  .legal :global(li) { margin-bottom: .35rem; }
+  .legal :global(.aviso) { background: var(--sky); border-radius: var(--r); padding: 1rem 1.2rem; margin: 1.2rem 0; }
+</style>
