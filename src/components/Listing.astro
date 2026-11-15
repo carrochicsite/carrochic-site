@@ -91,9 +91,9 @@ const sufixo = pagina > 1 ? ` (página ${pagina})` : '';
   }
   .grid > :global(*) { min-width: 0; }
   @media (max-width: 992px) {
-    .grid { grid-template-columns: repeat(2, 1fr); } /* tablet e celular: 4 linhas de 2 */
+    .grid { grid-template-columns: repeat(2, 1fr); } /* tablet: 4 linhas de 2 */
   }
   @media (max-width: 600px) {
-    .grid { gap: 10px; }
+    .grid { grid-template-columns: 1fr; gap: 16px; } /* celular: 1 por linha, 8 em coluna */
   }
 </style>
