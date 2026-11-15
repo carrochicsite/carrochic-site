@@ -1,8 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 import VehicleCard from './VehicleCard.astro';
-import { SITE, TIPOS, POR_PAGINA } from '../lib/site';
+import { SITE, TIPOS } from '../lib/site';
 import { supabase, CAMPOS } from '../lib/supabase';
+
+const POR_PAGINA = 8; // 8 veículos por página = 2 linhas de 4
 
 const { tipo } = Astro.props;
 const t = TIPOS[tipo];
@@ -80,3 +82,18 @@ const sufixo = pagina > 1 ? ` (página ${pagina})` : '';
           </>}
   </section>
 </Base>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* desktop: 2 linhas de 4 */
+    gap: 20px;
+  }
+  .grid > :global(*) { min-width: 0; }
+  @media (max-width: 992px) {
+    .grid { grid-template-columns: repeat(2, 1fr); } /* tablet e celular: 4 linhas de 2 */
+  }
+  @media (max-width: 600px) {
+    .grid { gap: 10px; }
+  }
+</style>
