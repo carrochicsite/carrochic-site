@@ -7,13 +7,12 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
 
   // ---- Páginas públicas: cookie do vendedor ----
   if (pathname !== '/admin' && !pathname.startsWith('/admin/')) {
-    // /qualquer-pagina?v=fatima-rodrigues -> grava o cookie e limpa o endereço
+    // /qualquer-pagina?v=fatima-rodrigues -> grava o cookie e mostra a página
+    // direto, SEM redirecionar (o redirecionamento fazia a regra abaixo apagar o cookie).
     const v = ctx.url.searchParams.get('v');
     if (slugValido(v) && !pathname.startsWith('/v/') && !pathname.startsWith('/wa/')) {
       ctx.cookies.set(COOKIE_VENDEDOR, v, cookieVendedor());
-      const limpo = new URL(ctx.url);
-      limpo.searchParams.delete('v');
-      return ctx.redirect(limpo.pathname + limpo.search, 302);
+      return next();
     }
 
     const atual = ctx.cookies.get(COOKIE_VENDEDOR)?.value;
