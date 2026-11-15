@@ -15,8 +15,27 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
       limpo.searchParams.delete('v');
       return ctx.redirect(limpo.pathname + limpo.search, 302);
     }
-    // renova o cookie a cada visita (mais 400 dias)
+
     const atual = ctx.cookies.get(COOKIE_VENDEDOR)?.value;
+
+    // REGRA: o link decide.
+    // Se a pessoa ABRIU uma página vinda de fora do site (WhatsApp, Google, digitando)
+    // e o link NÃO tem o código do vendedor, o cookie antigo é descartado
+    // e o botão passa a abrir o número do site principal.
+    // Navegação dentro do site (referer do próprio site) mantém o vendedor.
+    const pagina = !pathname.startsWith('/v/') && !pathname.startsWith('/wa/');
+    const destino = ctx.request.headers.get('sec-fetch-dest'); // 'document' = abrir página
+    const ehNavegacao = !destino || destino === 'document';
+    if (pagina && ehNavegacao && atual) {
+      let veioDoSite = false;
+      try { veioDoSite = new URL(ctx.request.headers.get('referer') ?? '').host === ctx.url.host; } catch {}
+      if (!veioDoSite) {
+        ctx.cookies.delete(COOKIE_VENDEDOR, { path: '/' });
+        return next();
+      }
+    }
+
+    // renova o cookie a cada visita (mais 400 dias)
     if (slugValido(atual)) ctx.cookies.set(COOKIE_VENDEDOR, atual, cookieVendedor());
     return next();
   }
