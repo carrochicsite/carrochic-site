@@ -93,3 +93,56 @@ const wa = `/wa/${waSlug ?? 'geral'}`;
     window.matchMedia('(min-width: 861px)').addEventListener('change', (e) => { if (e.matches) alternar(false); });
   }
 </script>
+
+<style is:global>
+  /* ===== AJUSTES MOBILE: cabeçalho sem cortar o menu e botão WhatsApp menor ===== */
+  @media (max-width: 860px) {
+    .site-header .wrap {
+      flex-wrap: nowrap !important;
+      gap: 8px !important;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+    .site-header .logo {
+      font-size: 1.2rem !important;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+    .site-header .hd-acoes {
+      display: flex !important;
+      align-items: center;
+      gap: 8px !important;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .site-header .hd-acoes .btn {
+      padding: 8px 12px !important;
+      font-size: 0.85rem !important;
+      min-height: 0 !important;
+      white-space: nowrap;
+    }
+    .site-header .burger {
+      flex-shrink: 0;
+    }
+
+    /* botão verde flutuante: menor, no canto, sem cobrir preço e botão do card */
+    .wa-flutuante {
+      right: 12px !important;
+      left: auto !important;
+      bottom: 12px !important;
+      padding: 10px 14px !important;
+      font-size: 0.8rem !important;
+      max-width: calc(100vw - 24px);
+      white-space: nowrap;
+    }
+    body {
+      padding-bottom: 64px; /* espaço para o botão flutuante não cobrir o rodapé */
+    }
+  }
+
+  @media (max-width: 360px) {
+    .site-header .logo { font-size: 1.05rem !important; }
+    .site-header .hd-acoes .btn { padding: 7px 10px !important; font-size: 0.8rem !important; }
+  }
+</style>
