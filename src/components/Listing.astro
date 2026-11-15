@@ -4,7 +4,7 @@ import VehicleCard from './VehicleCard.astro';
 import { SITE, TIPOS } from '../lib/site';
 import { supabase, CAMPOS } from '../lib/supabase';
 
-const POR_PAGINA = 8; // 8 veículos por página = 2 linhas de 4
+const POR_PAGINA = 8; // 8 veículos por página = 2 linhas de 4 (PC) | 8 em coluna (celular)
 
 const { tipo } = Astro.props;
 const t = TIPOS[tipo];
@@ -84,16 +84,25 @@ const sufixo = pagina > 1 ? ` (página ${pagina})` : '';
 </Base>
 
 <style>
+  /* PC e notebook: 4 carros por linha, 2 linhas = 8 por página */
   .grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* desktop: 2 linhas de 4 */
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
+    align-items: stretch; /* cards com a mesma altura na linha */
   }
-  .grid > :global(*) { min-width: 0; }
-  @media (max-width: 992px) {
-    .grid { grid-template-columns: repeat(2, 1fr); } /* tablet: 4 linhas de 2 */
+  .grid > :global(*) {
+    min-width: 0;
+    height: 100%;
   }
+
+  /* Tablet / tela pequena: 2 por linha */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Celular: 1 carro por linha, 8 carros em coluna */
   @media (max-width: 600px) {
-    .grid { grid-template-columns: 1fr; gap: 16px; } /* celular: 1 por linha, 8 em coluna */
+    .grid { grid-template-columns: 1fr; gap: 16px; }
   }
 </style>
