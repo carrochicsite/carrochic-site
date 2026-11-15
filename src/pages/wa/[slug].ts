@@ -1,15 +1,13 @@
 import type { APIRoute } from 'astro';
 import { SITE, waLink } from '../../lib/site';
 import { supabase, tituloVeiculo } from '../../lib/supabase';
-import { servidorClient, slugValido } from '../../lib/vendedor';
+import { COOKIE_VENDEDOR, servidorClient, slugValido } from '../../lib/vendedor';
 
 // Botão de WhatsApp: /wa/{slug-do-veiculo} (ou /wa/geral).
-// O número é escolhido aqui, no servidor, e nunca vai para o HTML.
-// ATENÇÃO: o cookie do vendedor foi DESATIVADO de propósito.
-// Todos os botões abrem sempre o número do site principal (SITE.whatsapp).
-export const GET: APIRoute = async ({ params, locals, request }) => {
+// O número do vendedor é lido aqui, no servidor, e nunca vai para o HTML.
+export const GET: APIRoute = async ({ params, cookies, locals, request }) => {
   const sb = servidorClient(locals);
-  const vslug = undefined as string | undefined; // antes: cookies.get(COOKIE_VENDEDOR)?.value
+  const vslug = cookies.get(COOKIE_VENDEDOR)?.value;
   const slug = params.slug ?? '';
 
   let vendedor: { id: string; nome: string; whatsapp: string } | null = null;
