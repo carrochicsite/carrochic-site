@@ -4,10 +4,18 @@ import VehicleCard from '../components/VehicleCard.astro';
 import { SITE, TIPOS, waLink } from '../lib/site';
 import { supabase, CAMPOS } from '../lib/supabase';
 
-let { data: lista } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('destaque', true).order('updated_at', { ascending: false }).limit(6);
-if (!lista || lista.length === 0) {
-  ({ data: lista } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').order('created_at', { ascending: false }).limit(6));
-}
+const POR_PAGINA = 8; // 8 carros na página inicial = 2 linhas de 4 (PC) | 8 em coluna (celular)
+
+const { data } = await supabase
+  .from('veiculos')
+  .select(CAMPOS)
+  .eq('tipo', 'carro')
+  .eq('status', 'ativo')
+  .order('created_at', { ascending: false })
+  .order('id', { ascending: false })
+  .limit(POR_PAGINA);
+const lista = data ?? [];
+
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
 
 const wa = waLink('Olá! Vim pelo site da CARROCHIC e quero ajuda para escolher um veículo.');
@@ -28,7 +36,7 @@ const faq = [
   path="/"
   jsonLd={jsonLd}
 >
-  <section class="hero">
+  <section class="hero" style="padding:2.5rem 0 3rem">
     <div class="wrap">
       <h1>Carros, motos e caminhões em Sete Lagoas, direto no WhatsApp</h1>
       <p>Escolha o veículo, veja as fotos e fale com quem atende você pelo nome. Sem fila e sem enrolação.</p>
@@ -39,6 +47,18 @@ const faq = [
     </div>
   </section>
 
+  {lista.length > 0 && (
+    <section class="sec alt" style="padding-top:2.5rem">
+      <div class="wrap">
+        <h2>Carros à venda</h2>
+        <div class="grid grid-home">{lista.map((v) => <VehicleCard v={v} />)}</div>
+        <p style="text-align:center;margin-top:1.5rem">
+          <a class="btn btn-primary" href={`/${TIPOS.carro.slug}`}>Ver todos os carros</a>
+        </p>
+      </div>
+    </section>
+  )}
+
   <section class="sec wrap">
     <h2>O que você procura?</h2>
     <div class="cats">
@@ -47,15 +67,6 @@ const faq = [
       ))}
     </div>
   </section>
-
-  {lista && lista.length > 0 && (
-    <section class="sec alt">
-      <div class="wrap">
-        <h2>Veículos em destaque</h2>
-        <div class="grid">{lista.map((v) => <VehicleCard v={v} />)}</div>
-      </div>
-    </section>
-  )}
 
   <section class="sec wrap">
     <h2>Como comprar</h2>
@@ -81,3 +92,19 @@ const faq = [
     </div>
   </section>
 </Base>
+
+<style>
+  .grid-home {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* PC e notebook: 2 linhas de 4 */
+    gap: 20px;
+    align-items: stretch;
+  }
+  .grid-home > :global(*) { min-width: 0; height: 100%; }
+  @media (max-width: 900px) {
+    .grid-home { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .grid-home { grid-template-columns: 1fr; gap: 16px; } /* celular: 1 por linha */
+  }
+</style>
