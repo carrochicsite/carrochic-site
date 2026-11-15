@@ -71,6 +71,7 @@ const ficha: [string, string | number | null][] = [
       {vendido
         ? <a class="btn btn-primary" href="/wa/geral" rel="nofollow noopener">Pedir um parecido</a>
         : <a class="btn btn-wa" href={wa} rel="nofollow noopener">Falar no WhatsApp</a>}
+      <button type="button" class="btn btn-primary" style="margin-top:.6rem" data-compartilhar data-path={`/veiculo/${v.slug}`} data-titulo={nome}>Compartilhar</button>
       <dl class="ficha">
         {ficha.filter(([, val]) => val).map(([k, val]) => <><dt>{k}</dt><dd>{val}</dd></>)}
       </dl>
@@ -83,3 +84,31 @@ const ficha: [string, string | number | null][] = [
     <section class="sec alt"><div class="wrap"><h2>Veículos parecidos</h2><div class="grid">{parecidos.map((p) => <VehicleCard v={p} />)}</div></div></section>
   )}
 </Base>
+
+<script>
+  // Botão Compartilhar: monta o link do veículo com o código do vendedor (se houver)
+  const botao = document.querySelector('[data-compartilhar]');
+  if (botao) {
+    botao.addEventListener('click', async () => {
+      const path = botao.getAttribute('data-path');
+      const titulo = botao.getAttribute('data-titulo') || document.title;
+      let url = location.origin + path;
+      try {
+        const r = await fetch('/api/eu', { cache: 'no-store' });
+        const d = await r.json();
+        if (d && d.v) url += '?v=' + encodeURIComponent(d.v);
+      } catch (e) {}
+      if (navigator.share) {
+        try { await navigator.share({ title: titulo, url }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        botao.textContent = 'Link copiado!';
+        setTimeout(() => { botao.textContent = 'Compartilhar'; }, 2000);
+      } catch (e) {
+        prompt('Copie o link:', url);
+      }
+    });
+  }
+</script>
