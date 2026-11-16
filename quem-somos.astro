@@ -1,0 +1,91 @@
+---
+// Salve como: src/pages/quem-somos.astro  → URL: carrochic.com.br/quem-somos
+import Base from '../layouts/Base.astro';
+import { SITE, TIPOS } from '../lib/site';
+
+// Botões usam a rota interna /wa/geral (a mesma do menu): o número real não aparece no HTML.
+const wa = '/wa/geral';
+
+// Número mascarado, montado a partir do SITE.whatsapp: (31) 9****-**12
+const num = SITE.whatsapp.replace(/\D/g, '');
+const telMascarado = `(${num.slice(2, 4)}) 9****-**${num.slice(-2)}`;
+
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'AutoDealer',
+  name: SITE.nome, url: SITE.url, email: SITE.email,
+  areaServed: { '@type': 'City', name: SITE.cidade },
+}];
+
+const faq = [
+  ['Onde a CARROCHIC® atende?', 'O atendimento é em Sete Lagoas e região. Chame no WhatsApp para combinar.'],
+  ['Com quem eu falo?', 'Com um vendedor, direto no WhatsApp. Ele responde com fotos extras, condições e horário para ver o veículo.'],
+  ['Dá para financiar?', 'Sim. Peça uma simulação pelo WhatsApp. As condições dependem da análise de crédito feita pela financeira.'],
+];
+---
+<Base
+  title="Quem somos | CARROCHIC® — Sete Lagoas, MG"
+  description="Conheça a CARROCHIC®: carros, motos, caminhões e utilitários em Sete Lagoas, MG, com atendimento personalizado direto no WhatsApp."
+  path="/quem-somos"
+  jsonLd={jsonLd}
+>
+  <section class="hero" style="padding:2.5rem 0 3rem">
+    <div class="wrap">
+      <h1>Quem somos</h1>
+      <p>
+        A CARRO<strong>CHIC</strong>® vende carros, motos, caminhões e utilitários em {SITE.cidade}, MG.
+        Você escolhe o veículo no site, vê as fotos e fala com quem atende você pelo nome.
+        Sem fila e sem enrolação.
+      </p>
+      <div class="acoes">
+        <a class="btn btn-primary" href={`/${TIPOS.carro.slug}`}>Ver veículos</a>
+        <a class="btn btn-ghost btn-wa" href={wa} rel="noopener">
+          <span>Falar no WhatsApp</span>
+          <small>{telMascarado}</small>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <h2>O que você procura?</h2>
+    <div class="cats">
+      {Object.values(TIPOS).map((t) => (
+        <a class="cat" href={`/${t.slug}`}><strong>{t.rotulo}</strong><span>Ver {t.plural} em {SITE.cidade}</span></a>
+      ))}
+    </div>
+  </section>
+
+  <section class="sec alt">
+    <div class="wrap">
+      <h2>Como trabalhamos</h2>
+      <ol class="passos">
+        <li><div class="step-n">1</div><h3>Escolha o veículo</h3><p>Veja fotos, preço e detalhes de cada anúncio.</p></li>
+        <li><div class="step-n">2</div><h3>Chame no WhatsApp</h3><p>A mensagem já vai pronta com o veículo escolhido.</p></li>
+        <li><div class="step-n">3</div><h3>Veja de perto e feche</h3><p>Combine a visita e, se quiser, simule o financiamento.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <h2>Dúvidas frequentes</h2>
+    {faq.map(([q, a]) => <details><summary>{q}</summary><p>{a}</p></details>)}
+  </section>
+
+  <section class="sec cta">
+    <div class="wrap">
+      <h2>Não achou o que procura?</h2>
+      <p>Conte o modelo e o orçamento. Avisamos quando chegar um veículo assim.</p>
+      <a class="btn btn-primary btn-wa" href={wa} rel="noopener">
+        <span>Falar no WhatsApp</span>
+        <small>{telMascarado}</small>
+      </a>
+      <p style="margin-top:1rem"><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* Só o detalhe do número mascarado dentro do botão; o resto vem do CSS global do site. */
+  .btn-wa { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .btn-wa small { font-size: .75rem; font-weight: 400; opacity: .8; letter-spacing: .03em; }
+</style>
