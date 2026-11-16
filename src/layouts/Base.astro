@@ -48,6 +48,7 @@ const wa = `/wa/${waSlug ?? 'geral'}`;
         <a class="logo" href="/">CARRO<b>CHIC</b>®</a>
         <nav id="menu-principal" aria-label="Principal" data-menu>
           {Object.values(TIPOS).map((t) => <a href={`/${t.slug}`}>{t.rotulo}</a>)}
+          <a href="/quem-somos">Quem somos</a>
         </nav>
         <div class="hd-acoes">
           <a class="btn btn-primary" href={wa} rel="nofollow noopener">WhatsApp</a>
@@ -68,6 +69,7 @@ const wa = `/wa/${waSlug ?? 'geral'}`;
           </div>
           <ul>
             {Object.values(TIPOS).map((t) => <li><a href={`/${t.slug}`}>{t.rotulo} em {SITE.cidade}</a></li>)}
+            <li><a href="/quem-somos">Quem somos</a></li>
           </ul>
         </div>
         <p class="fine">© {new Date().getFullYear()} {SITE.nome} — {SITE.cidade}, {SITE.uf} · <a href="/privacidade">Política de Privacidade</a> · <a href="/termos">Termos de Uso</a></p>
