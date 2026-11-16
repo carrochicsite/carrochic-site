@@ -31,7 +31,7 @@ const faq = [
   <section class="hero" style="padding:2.5rem 0 3rem">
     <div class="wrap">
       <h1>Quem somos</h1>
-      <p>
+      <p class="texto-justificado">
         A CARRO<strong>CHIC</strong>® vende carros, motos, caminhões e utilitários em {SITE.cidade}, MG.
         Você escolhe o veículo no site, vê as fotos e fala com quem atende você pelo nome.
         Sem fila e sem enrolação.
@@ -88,4 +88,12 @@ const faq = [
   /* Só o detalhe do número mascarado dentro do botão; o resto vem do CSS global do site. */
   .btn-wa { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
   .btn-wa small { font-size: .75rem; font-weight: 400; opacity: .8; letter-spacing: .03em; }
+
+  /* Texto da introdução justificado. A hifenização evita espaços grandes entre as palavras no celular. */
+  .texto-justificado {
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
 </style>
