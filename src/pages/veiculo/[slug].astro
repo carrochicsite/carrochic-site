@@ -15,6 +15,8 @@ const nome = tituloVeiculo(v);
 const fotos = fotosOrdenadas(v);
 const tipo = TIPOS[v.tipo] ?? TIPOS.carro;
 const vendido = v.status === 'vendido';
+// Só mostra a km quando ela existe e é maior que zero (vazio ou 0 = não informada).
+const temKm = v.km != null && Number(v.km) > 0;
 // O botão passa pela rota /wa/, que escolhe o número do vendedor no servidor.
 const wa = `/wa/${v.slug}`;
 const { data: parecidos } = await supabase.from('veiculos').select(CAMPOS).eq('status', 'ativo').eq('tipo', v.tipo).neq('id', v.id).limit(3);
@@ -25,7 +27,7 @@ const jsonLd = [
     brand: { '@type': 'Brand', name: v.marca }, model: v.modelo,
     vehicleModelDate: String(v.ano_modelo ?? ''), color: v.cor ?? undefined, fuelType: v.combustivel ?? undefined,
     vehicleTransmission: v.cambio ?? undefined,
-    mileageFromOdometer: v.km != null ? { '@type': 'QuantitativeValue', value: v.km, unitCode: 'KMT' } : undefined,
+    mileageFromOdometer: temKm ? { '@type': 'QuantitativeValue', value: v.km, unitCode: 'KMT' } : undefined,
     image: fotos.map((f) => f.url),
     description: v.descricao ?? undefined,
     offers: {
@@ -46,12 +48,12 @@ const jsonLd = [
 ];
 const ficha: [string, string | number | null][] = [
   ['Ano', v.ano_fabricacao && v.ano_modelo ? `${v.ano_fabricacao}/${v.ano_modelo}` : v.ano_modelo],
-  ['Quilometragem', kmFmt(v.km)], ['Câmbio', v.cambio], ['Combustível', v.combustivel], ['Cor', v.cor], ['Bairro', v.bairro],
+  ['Quilometragem', temKm ? kmFmt(v.km) : null], ['Câmbio', v.cambio], ['Combustível', v.combustivel], ['Cor', v.cor], ['Bairro', v.bairro],
 ];
 ---
 <Base
   title={`${nome} à venda em ${SITE.cidade}, MG | ${SITE.nome}`}
-  description={`${nome}${v.km != null ? `, ${kmFmt(v.km)}` : ''}, por ${brl(v.preco)} em ${SITE.cidade}, ${SITE.uf}. Veja as fotos e fale no WhatsApp.`}
+  description={`${nome}${temKm ? `, ${kmFmt(v.km)}` : ''}, por ${brl(v.preco)} em ${SITE.cidade}, ${SITE.uf}. Veja as fotos e fale no WhatsApp.`}
   path={`/veiculo/${v.slug}`}
   image={fotos[0]?.url}
   jsonLd={jsonLd}
