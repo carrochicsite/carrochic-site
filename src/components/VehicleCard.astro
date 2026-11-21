@@ -3,7 +3,9 @@ import { brl, kmFmt } from '../lib/site';
 import { fotosOrdenadas, tituloVeiculo } from '../lib/supabase';
 const { v } = Astro.props;
 const capa = fotosOrdenadas(v)[0];
-const meta = [v.ano_modelo, kmFmt(v.km), v.cambio, v.combustivel].filter(Boolean).join(', ');
+// Só mostra a km quando ela existe e é maior que zero (vazio ou 0 = não informada).
+const temKm = v.km != null && Number(v.km) > 0;
+const meta = [v.ano_modelo, temKm ? kmFmt(v.km) : null, v.cambio, v.combustivel].filter(Boolean).join(', ');
 ---
 <a class="vcard" href={`/veiculo/${v.slug}`}>
   {capa
