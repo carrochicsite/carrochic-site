@@ -77,6 +77,9 @@ const faixas = [30000, 50000, 80000, 120000];
         {lista.map((v: any, i: number) => {
           const capa = fotosOrdenadas(v)[0];
           const titulo = tituloVeiculo(v);
+          // Só mostra a km quando ela existe e é maior que zero (vazio ou 0 = não informada).
+          const temKm = v.km != null && Number(v.km) > 0;
+          const det = [v.ano_modelo, temKm ? kmFmt(v.km) : null].filter(Boolean).join(' · ');
           return (
             <article class="cat-card">
               <a href={`/veiculo/${v.slug}`} class="foto">
@@ -86,7 +89,7 @@ const faixas = [30000, 50000, 80000, 120000];
               </a>
               <div class="info">
                 <h2><a href={`/veiculo/${v.slug}`}>{titulo}</a></h2>
-                <p class="det">{[v.ano_modelo, kmFmt(v.km)].filter(Boolean).join(' · ')}</p>
+                <p class="det">{det}</p>
                 <p class="preco">{brl(v.preco)}</p>
                 <a class="btn btn-primary" href={`/wa/${v.slug}`} rel="nofollow">Chamar no WhatsApp</a>
               </div>
